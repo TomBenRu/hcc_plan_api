@@ -17,16 +17,22 @@ class CustomError(Exception):
     pass
 
 
-def create_person(admin_id: UUID, person: pm.PersonCreateRemote):
+def create_person(admin_id: UUID, person: pm.PersonCreate):
     with db_session:
         project = Person[admin_id].project
-        if select(p for p in project.persons if p.email == person.email):
-            raise CustomError(f'Eine Person mit Email {person.email} ist schon vorhanden.')
-        if select(p for p in project.persons if p.f_name == person.f_name and p.l_name == person.l_name):
-            raise CustomError(f'Eine Person mit Namen "{person.f_name} {person.l_name}" ist schon vorhanden.')
         person.project = project
         new_person = Person(**person.dict())
-        return PersonShowBase.from_orm(new_person)
+        return pm.PersonShow.from_orm(new_person)
+
+
+def make_person__actor_of_team(person: pm.Person, team: pm.Team, user_id: UUID):
+    with db_session:
+        dispatcher = Person[user_id]
+        if dispatcher.project.id != person.project.id or (team.id not in dispatcher.teams.id):
+            raise CustomError('Person ist nicht im Projekt oder Dispatcher ist nich für das Team zuständig.')
+        Team[team.id].dispatcher = Person[person.id]
+        return pm.PersonShow.from_orm(person)
+
 
 
 def get_project_from_user_id(user_id) -> pm.Project:
@@ -194,23 +200,15 @@ def create_new_team(team: pm.TeamCreate):
         return pm.TeamShow.from_orm(new_team)
 
 
-def create_admin(project: ProjectBase, person: PersonCreateRemoteBase):  # aktuell
+def create_account(project: pm.ProjectCreate, person: pm.PersonCreate):  # aktuell
     password = secrets.token_urlsafe(8)
     hashed_psw = utils.hash_psw(password)
     with db_session:
-        if proj := Project.get(lambda pr: pr.name == project.name):
-            raise ValueError('Es gibt bereits ein Projekt dieses Namens.')
         new_project = Project(name=project.name)
-        if pers := Person.get(lambda p: p.email == person.email):
-            if pers.f_name != person.f_name or pers.l_name != person.l_name:
-                raise ValueError('Es gibt bereits eine Person mit dieser Email.')
-            else:
-                person = PersonBase.from_orm(pers)
+        new_person = Person(**person.dict())
+        new_person.project = new_project
 
-        person = Person(f_name=person.f_name, l_name=person.l_name, email=person.email, project=new_project)
-        new_admin = Admin(password=hashed_psw, person=person)
-        new_admin.to_dict()
-        return AdminShowBase.from_orm(new_admin), password
+        return pm.ProjectShow.from_orm(new_project)
 
 
 def create_actor__remote(person: PersonCreateRemoteBase, team_id: str):  # aktuell

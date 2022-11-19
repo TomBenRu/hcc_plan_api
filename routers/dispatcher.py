@@ -1,32 +1,31 @@
 import datetime
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status, Request, Depends
-from pydantic import EmailStr, json, BaseModel
 
-from databases.database import Dispatcher
 from databases.enums import AuthorizationTypes
-from databases.pydantic_models import Token, TeamBase, PersonBase, ActorCreateBaseRemote, TokenData, PersonCreateBase, \
-    PersonCreateRemoteBase
+import databases.pydantic_models as pm
 from databases.services import (create_actor__remote, find_user_by_email, create_new_plan_period, get_past_plan_periods,
                                 change_status_planperiod, get_actors_in_dispatcher_teams, get_avail_days_from_actor,
-                                get_teams_of_dispatcher, get_planperiods_last_recent_date, get_project_from_user_id)
+                                get_teams_of_dispatcher, get_planperiods_last_recent_date, get_project_from_user_id,
+                                make_person__actor_of_team)
 from oauth2_authentication import (verify_supervisor_username, verify_supervisor_password, create_access_token,
                                    verify_access_token, verify_su_access_token,
-                                   get_current_dispatcher)
+                                   get_current_dispatcher, verify_dispatcher_username, verify_user_password)
 from utilities import utils
 
 router = APIRouter(prefix='/dispatcher', tags=['Dispatcher'])
 
 
-@router.get('/login', response_model=Token)
+@router.get('/login', response_model=pm.Token)
 def dispatcher_login(email: str, password: str):
-    if not (dispatcher := find_user_by_email(email, Dispatcher)):
+    if not (user := verify_dispatcher_username(email)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'Invalid Credentials')
 
-    if not utils.verify(password, dispatcher.password):
+    if not verify_user_password(password, user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'Invalid Credentials')
 
-    access_token = create_access_token(data={'user_id': dispatcher.id,
+    access_token = create_access_token(data={'user_id': user.id,
                                              'authorization': AuthorizationTypes.dispatcher.value})
     return {'access_token': access_token, 'token_type': 'bearer'}
 
@@ -37,27 +36,24 @@ def get_project(access_token: str):
         token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
-    dispatcher_id = token_data.id
+    user_id = token_data.id
 
-    project = get_project_from_user_id(dispatcher_id, Dispatcher)
+    project = get_project_from_user_id(user_id)
     return project
 
 
 @router.post('/actor')
-def create_new_actor(person: PersonCreateRemoteBase, team: dict[str, str], token: Token):
+def create_new_actor(person: pm.Person, team: pm.Team, token: pm.Token):
     try:
         token_data = verify_access_token(token.access_token, authorization=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
-
-    team_id = team['team_id']
-
+    user_id = token_data.id
     try:
-        new_actor = create_actor__remote(person, team_id)
+        person = make_person__actor_of_team(person, team, user_id)
     except Exception as e:
-        return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'dieser Fehler trat auf: {e}')
-
-    return new_actor
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Error: {e}')
+    return person
 
 
 @router.post('/planperiod')

@@ -4,11 +4,8 @@ from fastapi import APIRouter, Depends, status, HTTPException, Response
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 
 from databases.enums import AuthorizationTypes
-from databases.pony_models import Dispatcher
 from databases.pydantic_models import Token
-from databases.services import find_user_by_email
 from oauth2_authentication import create_access_token, verify_supervisor_username, verify_supervisor_password
-from utilities import utils
 
 router = APIRouter(tags=['Authentication'])
 

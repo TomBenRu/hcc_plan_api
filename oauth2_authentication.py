@@ -102,6 +102,10 @@ def verify_admin_username(username: str) -> pm.PersonShow | None:
     return find_user_by_email(username, authorization=AuthorizationTypes.admin)
 
 
+def verify_dispatcher_username(username: str) -> pm.PersonShow | None:
+    return find_user_by_email(username, authorization=AuthorizationTypes.dispatcher)
+
+
 def verify_actor_username(username: str) -> pm.PersonShow | None:
     return find_user_by_email(username, authorization=AuthorizationTypes.actor)
 

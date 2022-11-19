@@ -8,7 +8,7 @@ from .enums import TimeOfDay
 
 class ProjectCreate(BaseModel):
     name: str
-    admin: 'Person'
+    admin: Optional['Person']
 
     class Config:
         orm_mode = True
@@ -22,19 +22,15 @@ class ProjectShow(Project):
     pass
 
 
-class PersonCreateRemote(BaseModel):
+class PersonCreate(BaseModel):
     f_name: str
-    l_name: Optional[str]
+    l_name: str
     email: EmailStr
-    password: str
+    password: Optional[str]
     project: Optional[Project]
 
     class Config:
         orm_mode = True
-
-
-class PersonCreate(PersonCreateRemote):
-    project: Project
 
 
 class Person(PersonCreate):
@@ -169,4 +165,6 @@ class TokenData(BaseModel):
 
 AvailablesShow.update_forward_refs(**locals())
 TeamShow.update_forward_refs(**locals())
+ProjectCreate.update_forward_refs(**locals())
 PersonShow.update_forward_refs(**locals())
+PersonCreate.update_forward_refs(**locals())

@@ -67,7 +67,7 @@ def get_project(access_token: str):
 
 
 @router.post('/person')
-def add_new_person(token: pm.Token, person: pm.PersonCreateRemote):
+def add_new_person(token: pm.Token, person: pm.PersonCreate):
     try:
         token_data = verify_access_token(token.access_token, authorization=AuthorizationTypes.admin)
     except Exception as e:

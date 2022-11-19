@@ -15,7 +15,7 @@ class Project(db_actors.Entity):
     created_at = Required(date, default=lambda: date.today())
     last_modified = Required(datetime, precision=0, default=lambda: datetime.utcnow())
     persons = Set('Person', reverse='project')
-    admin = Required('Person', reverse='admin_of_project')
+    admin = Optional('Person', reverse='admin_of_project')
 
     @property
     def teams(self):
