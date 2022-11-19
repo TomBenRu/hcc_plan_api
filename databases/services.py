@@ -19,7 +19,7 @@ class CustomError(Exception):
 
 def create_person(admin_id: UUID, person: pm.PersonCreateRemote):
     with db_session:
-        project = Admin[admin_id].project
+        project = Person[admin_id].project
         if select(p for p in project.persons if p.email == person.email):
             raise CustomError(f'Eine Person mit Email {person.email} ist schon vorhanden.')
         if select(p for p in project.persons if p.f_name == person.f_name and p.l_name == person.l_name):
@@ -29,28 +29,28 @@ def create_person(admin_id: UUID, person: pm.PersonCreateRemote):
         return PersonShowBase.from_orm(new_person)
 
 
-def get_project_from_user_id(user_id, user: Type[Admin | Dispatcher]):
+def get_project_from_user_id(user_id) -> pm.Project:
     with db_session:
-        project = user[user_id].project
-        return ProjectBase.from_orm(project)
+        project = Person[user_id].project
+        return pm.Project.from_orm(project)
 
 
-def get_all_persons(admin_id: UUID):
-    with db_session:
-        try:
-            persons = Admin[admin_id].project.persons
-        except Exception as e:
-            raise CustomError(f'Error: {e}')
-        return [PersonShowBase.from_orm(p) for p in persons]
-
-
-def get_all_project_teams(admin_id: UUID):
+def get_all_persons(admin_id: UUID) -> list[pm.Person]:
     with db_session:
         try:
-            teams = Admin[admin_id].teams
+            persons = Person[admin_id].admin_of_project.persons
         except Exception as e:
             raise CustomError(f'Error: {e}')
-        return [TeamShowBase.from_orm(t) for t in teams]
+        return [pm.Person.from_orm(p) for p in persons]
+
+
+def get_all_project_teams(admin_id: UUID) -> list[pm.Team]:
+    with db_session:
+        try:
+            teams = Person[admin_id].admin_of_project.teams
+        except Exception as e:
+            raise CustomError(f'Error: {e}')
+        return [pm.Team.from_orm(t) for t in teams]
 
 
 def save_new_actor(user: ActorCreateBase):
@@ -188,11 +188,10 @@ def get_avail_days_from_actor(actor_id: str):
         return all_avail_days
 
 
-def create_new_team(team: TeamCreateBase, dispatcher: DispatcherShowBase):  # aktuell
+def create_new_team(team: pm.TeamCreate):
     with db_session:
-        new_team =
-        new_team = Team(name=team.name, dispatcher=Dispatcher[dispatcher.id])
-        return TeamShowBase.from_orm(new_team)
+        new_team = Team(**team.dict())
+        return pm.TeamShow.from_orm(new_team)
 
 
 def create_admin(project: ProjectBase, person: PersonCreateRemoteBase):  # aktuell
@@ -212,16 +211,6 @@ def create_admin(project: ProjectBase, person: PersonCreateRemoteBase):  # aktue
         new_admin = Admin(password=hashed_psw, person=person)
         new_admin.to_dict()
         return AdminShowBase.from_orm(new_admin), password
-
-
-def create_dispatcher(person: PersonBase):
-    with db_session:
-        password = secrets.token_urlsafe(8)
-        hashed_psw = utils.hash_psw(password)
-        new_dispatcher = Dispatcher(password=hashed_psw, person=Person[person.id])
-        dispatcher_base = DispatcherShowBase.from_orm(new_dispatcher)
-
-        return {'dispatcher': dispatcher_base, 'password': password}
 
 
 def create_actor__remote(person: PersonCreateRemoteBase, team_id: str):  # aktuell

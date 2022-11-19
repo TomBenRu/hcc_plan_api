@@ -1,7 +1,7 @@
 from datetime import date
 from datetime import datetime
 from uuid import UUID
-from pony.orm import Database, PrimaryKey, Required, Set, Optional
+from pony.orm import Database, PrimaryKey, Required, Set, Optional, composite_key
 
 from databases.enums import TimeOfDay
 
@@ -35,6 +35,8 @@ class Person(db_actors.Entity):
     dispatcher_of_teams = Set('Team', reverse='dispatcher')
     actor_of_team = Optional('Team', reverse='actors')
     availables = Set('Availables')
+
+    composite_key(f_name, l_name, project)
 
 
 class Team(db_actors.Entity):

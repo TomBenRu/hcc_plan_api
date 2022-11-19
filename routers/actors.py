@@ -4,7 +4,7 @@ from pydantic import EmailStr
 
 from databases.enums import AuthorizationTypes
 from databases.services import find_user_by_email, available_days_to_db, get_open_plan_periods, get_user_by_id
-from oauth2_authentication import create_access_token, get_current_user_cookie
+from oauth2_authentication import create_access_token, get_current_user_cookie, verify_actor_username
 from utilities import utils
 
 templates = Jinja2Templates(directory='templates')
@@ -14,7 +14,7 @@ router = APIRouter(prefix='/actors', tags=['Actors'])
 
 @router.post('/plan-periods')
 def actor_plan_periods(request: Request, email: EmailStr = Form(...), password: str = Form(...)):
-    if not (user := find_user_by_email(email, authorization=AuthorizationTypes.actor)):
+    if not (user := verify_actor_username(username=email)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'Invalid Credentials')
 
     if not utils.verify(password, user.password):

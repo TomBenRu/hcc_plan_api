@@ -3,9 +3,8 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security.oauth2 import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
-from databases.database import Admin
 from databases.enums import AuthorizationTypes
-from databases.pydantic_models import TokenData, Token, AdminBase
+import databases.pydantic_models as pm
 from databases.services import find_user_by_email
 from settings import settings
 from utilities import utils
@@ -48,7 +47,7 @@ def verify_access_token(token: str, authorization: AuthorizationTypes):
             raise credentials_exception
         if not payload.get('authorization') == authorization.value:
             raise credentials_exception
-        token_data = TokenData(id=u_id, authorization=payload.get('authorization'))
+        token_data = pm.TokenData(id=u_id, authorization=payload.get('authorization'))
     except JWTError:
         raise credentials_exception
     return token_data
@@ -99,9 +98,13 @@ def verify_supervisor_password(password: str):
     return utils.verify(password, SUPERVISOR_PASWORD)
 
 
-def verify_admin_username(username: str) -> AdminBase | None:
-    return find_user_by_email(username, user=Admin)
+def verify_admin_username(username: str) -> pm.PersonShow | None:
+    return find_user_by_email(username, authorization=AuthorizationTypes.admin)
 
 
-def verify_admin_password(password: str, admin: AdminBase):
-    return utils.verify(plain_password=password, hashed_password=admin.password)
+def verify_actor_username(username: str) -> pm.PersonShow | None:
+    return find_user_by_email(username, authorization=AuthorizationTypes.actor)
+
+
+def verify_user_password(password, user: pm.Person) -> bool:
+    return utils.verify(plain_password=password, hashed_password=user.password)
