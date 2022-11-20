@@ -19,11 +19,15 @@ class CustomError(Exception):
 
 
 def create_person(admin_id: UUID, person: pm.PersonCreate):
+    if not (password := person.password):
+        password = secrets.token_urlsafe(8)
+    hashed_psw = utils.hash_psw(password)
     with db_session:
         project = Person[admin_id].project
         person.project = project
+        person.password = hashed_psw
         new_person = Person(**person.dict())
-        return pm.PersonShow.from_orm(new_person)
+        return {'person': pm.PersonShow.from_orm(new_person), 'password': password}
 
 
 def make_person__actor_of_team(person: pm.Person, team: pm.Team, user_id: UUID):
@@ -162,9 +166,11 @@ def get_avail_days_from_actor(actor_id: UUID):
         return all_avail_days
 
 
-def create_new_team(team: pm.TeamCreate):
+def create_new_team(team: pm.TeamCreate, person_id: str):
+    person_id = UUID(person_id)
     with db_session:
-        new_team = Team(**team.dict())
+        person = Person[person_id]
+        new_team = Team(name=team.name, dispatcher=person)
         return pm.TeamShow.from_orm(new_team)
 
 

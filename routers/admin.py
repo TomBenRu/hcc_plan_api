@@ -80,13 +80,13 @@ def add_new_person(token: pm.Token, person: pm.PersonCreate):
 
 
 @router.post('/team')
-def add_new_team(token: pm.Token, team: pm.TeamCreate):
+def add_new_team(token: pm.Token, team: pm.TeamCreate, person: dict):
     try:
         token_data = verify_access_token(token.access_token, authorization=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     try:
-        new_team = create_new_team(team=team)
+        new_team = create_new_team(team=team, person_id=person['id'])
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                             detail=f'Fehler: {e}')

@@ -29,6 +29,9 @@ class MainFrame(ttk.Frame):
 
         self.access_token: str | None = None
         self.project: pm.Project | None = None
+        self.new_project_data: dict | None = None
+        self.new_person_data: dict | None = None
+        self.new_team_data: dict | None = None
         self.all_actors: list[dict[str, str]] | None = None
         self.avail_days = {}
         self.planperiod = None
@@ -65,10 +68,14 @@ class MainFrame(ttk.Frame):
         self.text_log.insert('end', '- new Project\n')
         create_new_project = CreateNewProject(self)
         self.wait_window(create_new_project)
-        self.text_log.insert('end', f'-- {self.new_project}')
+        self.text_log.insert('end', f'-- {self.new_project_data}')
 
     def new_person(self):
         self.text_log.insert('end', '- new person\n')
+        create_person = CreatePerson(self)
+        self.wait_window(create_person)
+        self.text_log.insert('end', f'-- {self.new_person_data}\n')
+
 
     def new_admin(self):
         self.text_log.insert('end', '- new admin\n')
@@ -78,7 +85,9 @@ class MainFrame(ttk.Frame):
 
     def new_team(self):
         self.text_log.insert('end', '- new team\n')
-        CreateTeam(self, self.host)
+        create_team = CreateTeam(self)
+        self.wait_window(create_team)
+        self.text_log.insert('end', f'-- {self.new_team_data}\n')
 
     def new_actor(self):
         self.text_log.insert('end', '- new actor\n')
@@ -124,6 +133,11 @@ class CommonTopLevel(tk.Toplevel):
         self.bind('<Escape>', lambda e: self.destroy())
 
         self.parent = parent
+
+        self.frame_input = ttk.Frame(self, padding='20 20 20 20')
+        self.frame_input.pack()
+        self.frame_buttons = ttk.Frame(self, padding='20 20 20 20')
+        self.frame_buttons.pack()
 
 
 class Settings(tk.Toplevel):
@@ -283,11 +297,6 @@ class CreateNewProject(CommonTopLevel):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.frame_input = ttk.Frame(self, padding='20 20 20 20')
-        self.frame_input.pack()
-        self.frame_buttons = ttk.Frame(self, padding='20 20 20 20')
-        self.frame_buttons.pack()
-
         self.lb_entry_projectname = tk.Label(self.frame_input, text='Projektname:')
         self.lb_entry_projectname.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 10))
         self.entry_projectname = tk.Entry(self.frame_input, width=50)
@@ -323,13 +332,48 @@ class CreateNewProject(CommonTopLevel):
         person = pm.PersonCreate(f_name=self.entry_fname_admin.get(), l_name=self.entry_lname_admin.get(),
                                  email=EmailStr(self.entry_email_admin.get()), password=self.entry_password_admin.get())
         project = pm.ProjectCreate(name=self.entry_projectname.get())
-        access_token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
+        token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
         response = requests.post(f'{self.parent.host}/su/account',
                                  json={'person': person.dict(), 'project': project.dict(),
-                                       'access_token': access_token.dict()})
-        self.parent.new_project = response.json()
+                                       'access_token': token.dict()})
+        self.parent.new_project_data = response.json()
         self.destroy()
 
+
+class CreatePerson(CommonTopLevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.lb_fname = tk.Label(self.frame_input, text='Vorname:')
+        self.lb_fname.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 5))
+        self.entry_fname = tk.Entry(self.frame_input, width=50)
+        self.entry_fname.grid(row=0, column=1, sticky='w', padx=(5, 0), pady=(0, 5))
+        self.lb_lname = tk.Label(self.frame_input, text='Nachname:')
+        self.lb_lname.grid(row=1, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.entry_lname = tk.Entry(self.frame_input, width=50)
+        self.entry_lname.grid(row=1, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
+        self.lb_email = tk.Label(self.frame_input, text='Email:')
+        self.lb_email.grid(row=2, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.entry_email = tk.Entry(self.frame_input, width=50)
+        self.entry_email.grid(row=2, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
+        self.lb_password = tk.Label(self.frame_input, text='Passwort')
+        self.lb_password.grid(row=3, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.entry_password = PlaceholderEntry(self.frame_input, width=50, show='*',
+                                            placeholder='Wenn leer: Random Passwort wird erzeugt.')
+        self.entry_password.grid(row=3, column=1, sticky='w', padx=(5, 0), pady=(5, 0))
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=20, command=self.new_person)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 10))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=20, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(10, 0))
+
+    def new_person(self):
+        person = pm.PersonCreate(f_name=self.entry_fname.get(), l_name=self.entry_lname.get(),
+                                 email=EmailStr(self.entry_email.get()), password=self.entry_password.get())
+        token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
+        response = requests.post(f'{self.parent.host}/admin/person',
+                                 json={'token': token.dict(), 'person': person.dict()})
+        self.parent.new_person_data = response.json()
 
 
 class GetAvailDays(tk.Toplevel):
@@ -385,122 +429,47 @@ class GetAvailDays(tk.Toplevel):
         raise connection_error
 
 
-class CreateTeam(tk.Toplevel):
-    def __init__(self, parent, host: str):
+class CreateTeam(CommonTopLevel):
+    def __init__(self, parent):
         super().__init__(parent)
-        self.grab_set()
-        self.focus_set()
-        self.bind('<Escape>', lambda e: self.destroy())
-        self.bind('<Return>', lambda event: self.save())
+        self.bind('<Return>', lambda event: self.create())
 
-        self.parent = parent
-        self.host = host
+        self.lb_name = tk.Label(self.frame_input, text='Name Team:')
+        self.lb_name.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 5))
+        self.entry_name = tk.Entry(self.frame_input, width=50)
+        self.entry_name.grid(row=0, column=1, sticky='w', padx=(5, 0), pady=(0, 5))
 
-        self.frame_choose_team = ttk.Frame(self, padding='20 20 20 05')
-        self.frame_choose_team.pack(fill='x', expand=True)
-        self.frame_choose_dispatcher = ttk.Frame(self, padding='20 05 20 20')
-        self.frame_choose_dispatcher.pack(fill='x', expand=True)
+        self.lb_dispatcher = tk.Label(self.frame_input, text='Auswahl Planer:in')
+        self.lb_dispatcher.grid(row=1, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.all_persons = {f'{p.f_name} {p.l_name}': p.id for p in self.get_persons()}
+        self.values_combo_dispatcher = list(self.all_persons)
+        self.var_combo_dispatcher = tk.StringVar(value=self.values_combo_dispatcher[0])
+        self.combo_dispatcher = ttk.Combobox(self.frame_input, values=self.values_combo_dispatcher,
+                                             textvariable=self.var_combo_dispatcher, width=46, state='readonly')
+        self.combo_dispatcher.grid(row=1, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
 
-        self.values_combo_teams = {f'{t.name} (Disp.:{t.dispatcher.person.f_name} {t.dispatcher.person.l_name})': t
-                                   for t in self.get_teams()}
-        self.values_combo_teams |= {'Team neu anlegen': '-1'}
-        self.lb_combo_teams = tk.Label(self.frame_choose_team, text='Team wählen...')
-        self.lb_combo_teams.grid(row=0, column=0, padx=(35, 5), sticky='e')
-        self.var_combo_teams = tk.StringVar(value=list(self.values_combo_teams.keys())[0])
-        self.combo_all_teams = ttk.Combobox(self.frame_choose_team, values=list(self.values_combo_teams.keys()),
-                                            textvariable=self.var_combo_teams, state='readonly', width=40)
-        self.combo_all_teams.bind('<<ComboboxSelected>>', lambda event: self.new_team())
-        self.combo_all_teams.grid(row=0, column=1, padx=(5, 0), sticky='e')
+        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=20, command=self.create)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 5))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=20, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
 
-        self.values_combo_persons = {f'{p.f_name} {p.l_name}': p.id for p in self.get_persons()}
-        self.values_combo_persons |= {'Person neu anlegen': '-1'}
-        self.lb_combo_persons = tk.Label(self.frame_choose_dispatcher, text='Dispatcher für Team...')
-        self.lb_combo_persons.grid(row=0, column=0, padx=(0, 5), sticky='e')
-        self.var_combo_persons = tk.StringVar(value=list(self.values_combo_persons.keys())[0])
-        self.combo_all_persons = ttk.Combobox(self.frame_choose_dispatcher, values=list(self.values_combo_persons.keys()),
-                                              textvariable=self.var_combo_persons, state='readonly', width=40)
-        self.combo_all_persons.bind('<<ComboboxSelected>>', lambda event: self.new_person())
-        self.combo_all_persons.grid(row=0, column=1, padx=(5, 0), sticky='e')
+        self.get_persons()
 
-        if self.values_combo_teams.get(self.var_combo_teams.get()) == '-1':
-            self.new_team()
+    def create(self):
+        team = pm.TeamCreate(name=self.entry_name.get())
+        person_id = self.all_persons[self.var_combo_dispatcher.get()]
+        token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
 
-    def save(self):
-        pass
-
-
+        response = requests.post(f'{self.parent.host}/admin/team',
+                                 json={'token': token.dict(), 'team': team.dict(), 'person': {'id': str(person_id)}})
+        team = response.json()
+        self.parent.new_team_data = team
+        self.destroy()
 
     def get_persons(self):
-        response = requests.get(f'{self.host}/admin/persons', params={'access_token': self.parent.access_token})
-        data = response.json()
-        if type(data) == dict and data.get('status_code') == 401:
-            tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
-            self.destroy()
-        return sorted((pm.PersonShow(**p) for p in data), key=lambda person: person.f_name)
-
-    def get_teams(self):
-        response = requests.get(f'{self.host}/admin/teams', params={'access_token': self.parent.access_token})
-        data = response.json()
-        if type(data) == dict and data.get('status_code') == 401:
-            tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
-            self.destroy()
-        return sorted((pm.TeamShow(**t) for t in data), key=lambda team: team.name)
-
-    def new_team(self):
-        class NewTeam(tk.Toplevel):
-            def __init__(self, parent):
-                super().__init__(parent)
-                self.grab_set()
-                self.focus_set()
-                self.bind('<Escape>', lambda event: self.destroy())
-                self.bind('<Return>', lambda event: self.save_team())
-
-                self.parent = parent
-
-                self.lb_name = tk.Label(self, text='Teamname:')
-                self.lb_name.grid(row=0, column=0, padx=(10, 5), pady=(10, 5))
-                self.entry_name = tk.Entry(self, name='xxxx')
-                self.entry_name.grid(row=0, column=1, padx=(5, 10), pady=(10, 5))
-
-            def save_team(self):
-                self.parent.var_combo_teams.set(self.entry_name.get())
-                self.destroy()
-
-        if self.values_combo_teams.get(self.var_combo_teams.get()) == '-1':
-            new_team = NewTeam(self)
-            self.wait_window(new_team)
-        if self.values_combo_persons.get(self.var_combo_persons.get()) == '-1':
-            self.new_person()
-
-    def new_person(self):
-        class NewPerson(tk.Toplevel):
-            def __init__(self, parent):
-                super().__init__(parent)
-                self.grab_set()
-                self.focus_set()
-                self.bind('<Escape>', lambda event: self.destroy())
-                self.bind('<Return>', lambda event: self.save_person())
-
-                self.parent = parent
-
-                self.lb_fname = tk.Label(self, text='Vorname:')
-                self.lb_fname.grid(row=0, column=0, padx=(10, 5), pady=(10, 5))
-                self.entry_fname = tk.Entry(self)
-                self.entry_fname.grid(row=0, column=1, padx=(5, 10), pady=(5, 5))
-                self.lb_lname = tk.Label(self, text='Nachname:')
-                self.lb_lname.grid(row=1, column=0, padx=(10, 5), pady=(5, 5))
-                self.entry_lname = tk.Entry(self)
-                self.entry_lname.grid(row=1, column=1, padx=(5, 10), pady=(5, 5))
-                self.lb_email = tk.Label(self, text='Email:')
-                self.lb_email.grid(row=2, column=0, padx=(10, 5), pady=(5, 5))
-                self.entry_email = tk.Entry(self)
-                self.entry_email.grid(row=2, column=1, padx=(5, 10), pady=(5, 10))
-
-            def save_person(self):
-                self.parent.var_combo_persons.set(f'{self.entry_fname.get()} {self.entry_lname.get()} {self.entry_email.get()}')
-                self.destroy()
-
-        NewPerson(self)
+        response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.parent.access_token})
+        all_persons = sorted([pm.Person(**p) for p in response.json()], key=lambda p: p.f_name)
+        return all_persons
 
 
 class CreatePlanperiod(tk.Toplevel):

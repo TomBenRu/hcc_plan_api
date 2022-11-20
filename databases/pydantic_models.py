@@ -51,7 +51,7 @@ class PersonShow(Person):
 
 class TeamCreate(BaseModel):
     name: str
-    dipatcher: Person
+    dispatcher: Optional[Person]
 
     class Config:
         orm_mode = True
@@ -59,6 +59,7 @@ class TeamCreate(BaseModel):
 
 class Team(TeamCreate):
     id: UUID
+    dispatcher: Person
 
 
 class TeamShow(Team):
