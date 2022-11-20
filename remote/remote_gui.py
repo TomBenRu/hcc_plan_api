@@ -10,6 +10,7 @@ import tkcalendar
 from pydantic import EmailStr
 
 import databases.pydantic_models as pm
+from remote.tools import PlaceholderEntry
 
 local = True
 
@@ -62,7 +63,9 @@ class MainFrame(ttk.Frame):
 
     def new_project(self):
         self.text_log.insert('end', '- new Project\n')
-        CreateNewProject(self)
+        create_new_project = CreateNewProject(self)
+        self.wait_window(create_new_project)
+        self.text_log.insert('end', f'-- {self.new_project}')
 
     def new_person(self):
         self.text_log.insert('end', '- new person\n')
@@ -280,17 +283,52 @@ class CreateNewProject(CommonTopLevel):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.new_project()
+        self.frame_input = ttk.Frame(self, padding='20 20 20 20')
+        self.frame_input.pack()
+        self.frame_buttons = ttk.Frame(self, padding='20 20 20 20')
+        self.frame_buttons.pack()
+
+        self.lb_entry_projectname = tk.Label(self.frame_input, text='Projektname:')
+        self.lb_entry_projectname.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 10))
+        self.entry_projectname = tk.Entry(self.frame_input, width=50)
+        self.entry_projectname.grid(row=0, column=1, sticky='w', padx=(5, 0), pady=(0, 10))
+
+        self.lb_entry_fname_admin = tk.Label(self.frame_input, text='Vorname Admin:')
+        self.lb_entry_fname_admin.grid(row=1, column=0, sticky='e', padx=(0, 5), pady=(10, 5))
+        self.entry_fname_admin = tk.Entry(self.frame_input, width=50)
+        self.entry_fname_admin.grid(row=1, column=1, sticky='w', padx=(5, 0), pady=(10, 5))
+
+        self.lb_entry_lname_admin = tk.Label(self.frame_input, text='Nachname Admin:')
+        self.lb_entry_lname_admin.grid(row=2, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.entry_lname_admin = tk.Entry(self.frame_input, width=50)
+        self.entry_lname_admin.grid(row=2, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
+
+        self.lb_entry_email_admin = tk.Label(self.frame_input, text='Email Admin:')
+        self.lb_entry_email_admin.grid(row=3, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.entry_email_admin = tk.Entry(self.frame_input, width=50)
+        self.entry_email_admin.grid(row=3, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
+
+        self.lb_entry_password_admin = tk.Label(self.frame_input, text='Passwort Admin:')
+        self.lb_entry_password_admin.grid(row=4, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.entry_password_admin = PlaceholderEntry(master=self.frame_input, width=50, show='*',
+                                                     placeholder='Wenn leer: Random Passwort wird erzeugt.')
+        self.entry_password_admin.grid(row=4, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=20, command=self.new_project)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 10))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=20, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(10, 0))
 
     def new_project(self):
-        person = pm.PersonCreate(f_name='Thomas', l_name='Ruff', email=EmailStr('mail@thomas-ruff.de'),
-                                 password='mario')
-        project = pm.ProjectCreate(name='HumorCanCare')
+        person = pm.PersonCreate(f_name=self.entry_fname_admin.get(), l_name=self.entry_lname_admin.get(),
+                                 email=EmailStr(self.entry_email_admin.get()), password=self.entry_password_admin.get())
+        project = pm.ProjectCreate(name=self.entry_projectname.get())
         access_token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
         response = requests.post(f'{self.parent.host}/su/account',
                                  json={'person': person.dict(), 'project': project.dict(),
                                        'access_token': access_token.dict()})
-        print(response.json())
+        self.parent.new_project = response.json()
+        self.destroy()
 
 
 
