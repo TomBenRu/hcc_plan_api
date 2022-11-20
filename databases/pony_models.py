@@ -15,11 +15,11 @@ class Project(db_actors.Entity):
     created_at = Required(date, default=lambda: date.today())
     last_modified = Required(datetime, precision=0, default=lambda: datetime.utcnow())
     persons = Set('Person', reverse='project')
-    admin = Optional('Person', reverse='admin_of_project')
+    admin = Optional('Person', reverse='project_of_admin')
 
     @property
     def teams(self):
-        return self.persons.dispatcher_of_teams
+        return self.persons.teams_of_dispatcher
 
 
 class Person(db_actors.Entity):
@@ -31,10 +31,10 @@ class Person(db_actors.Entity):
     created_at = Required(date, default=lambda: date.today())
     last_modified = Required(datetime, default=lambda: datetime.utcnow())
     project = Required(Project, reverse='persons')
-    admin_of_project = Optional(Project, reverse='admin')
-    dispatcher_of_teams = Set('Team', reverse='dispatcher')
-    actor_of_team = Optional('Team', reverse='actors')
-    availables = Set('Availables')
+    project_of_admin = Optional(Project, reverse='admin')
+    teams_of_dispatcher = Set('Team', reverse='dispatcher')
+    team_of_actor = Optional('Team', reverse='actors')
+    availabless = Set('Availables')
 
     composite_key(f_name, l_name, project)
 
@@ -44,8 +44,8 @@ class Team(db_actors.Entity):
     name = Required(str, 50, unique=True)
     created_at = Required(date, default=lambda: date.today())
     last_modified = Required(datetime, default=lambda: datetime.utcnow())
-    actors = Set(Person, reverse='actor_of_team')
-    dispatcher = Required(Person, reverse='dispatcher_of_teams')
+    actors = Set(Person, reverse='team_of_actor')
+    dispatcher = Required(Person, reverse='teams_of_dispatcher')
     plan_periods = Set('PlanPeriod')
 
     @property

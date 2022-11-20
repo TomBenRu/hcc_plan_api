@@ -1,5 +1,5 @@
 from datetime import date, datetime, timedelta
-from typing import Optional, Set, Any
+from typing import Optional, Set, Any, List
 from uuid import UUID
 
 from pydantic import BaseModel, Field, EmailStr, conint, validator
@@ -31,6 +31,7 @@ class PersonCreate(BaseModel):
 
     class Config:
         orm_mode = True
+        arbitrary_types_allowed = True
 
 
 class Person(PersonCreate):
@@ -38,11 +39,11 @@ class Person(PersonCreate):
 
 
 class PersonShow(Person):
-    admin_of_project: Optional[Project]
-    dispatcher_of_teams = list['Team']
-    actor_of_team = Optional['Team']
+    project_of_admin: Optional[Project]
+    teams_of_dispatcher = List['Team']
+    team_of_actor = Optional['Team']
 
-    @validator('dispatcher_of_teams', pre=True, allow_reuse=True)
+    @validator('teams_of_dispatcher', pre=True, allow_reuse=True)
     def pony_set_to_list(cls, values):
         return [v for v in values]
 

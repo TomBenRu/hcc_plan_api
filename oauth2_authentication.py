@@ -53,7 +53,7 @@ def verify_access_token(token: str, authorization: AuthorizationTypes):
     return token_data
 
 
-def verify_su_access_token(token: Token):
+def verify_su_access_token(token: pm.Token):
     try:
         payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=ALGORITHM)
         if not (su := payload.get('supervisor')):

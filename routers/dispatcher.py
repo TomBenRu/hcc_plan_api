@@ -5,10 +5,10 @@ from fastapi import APIRouter, HTTPException, status, Request, Depends
 
 from databases.enums import AuthorizationTypes
 import databases.pydantic_models as pm
-from databases.services import (create_actor__remote, find_user_by_email, create_new_plan_period, get_past_plan_periods,
+from databases.services import (create_new_plan_period,
                                 change_status_planperiod, get_actors_in_dispatcher_teams, get_avail_days_from_actor,
-                                get_teams_of_dispatcher, get_planperiods_last_recent_date, get_project_from_user_id,
-                                make_person__actor_of_team)
+                                get_planperiods_last_recent_date, get_project_from_user_id,
+                                make_person__actor_of_team, get_teams_of_dispatcher)
 from oauth2_authentication import (verify_supervisor_username, verify_supervisor_password, create_access_token,
                                    verify_access_token, verify_su_access_token,
                                    get_current_dispatcher, verify_dispatcher_username, verify_user_password)
@@ -61,7 +61,7 @@ def new_planperiod(access_token: str, team_id: str, date_start: str, date_end: s
     try:
         token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
     except Exception as e:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='wrong cedentials')
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials - {e}')
     dispatcher_id = token_data.id
 
     if not date_start:
@@ -79,30 +79,13 @@ def new_planperiod(access_token: str, team_id: str, date_start: str, date_end: s
     return new_plan_period
 
 
-@router.get('/planperiods')
-def get_planperiods(access_token: str, team_id: str, nbr_past_planperiods: int, only_not_closed: int):
-    """nbr_past_planperiods: positiver Wert -> Anzahl zurückliegender Planperioden.
-       0 -> alle Planperioden"""
-    try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
-    except Exception as e:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='wrong cedentials')
-    dispatcher_id = int(token_data.id)
-    nbr_past_planperiods = int(nbr_past_planperiods)
-    only_not_closed = bool(only_not_closed)
-
-    plan_periods = get_past_plan_periods(team_id, nbr_past_planperiods, only_not_closed)
-
-    return plan_periods
-
-
 @router.get('/pp_last_recent_date')
 def get_planperiod_last_recent_date(access_token: str, team_id: str):
     try:
         token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
     except Exception as e:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='wrong cedentials')
-    dispatcher_id = int(token_data.id)
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials: {e}')
+    user_id = token_data.id
 
     date = get_planperiods_last_recent_date(team_id)
     return date
@@ -113,31 +96,10 @@ def get_teams(access_token: str):
     try:
         token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
     except Exception as e:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='wrong cedentials')
-    dispatcher_id = token_data.id
-    teams = get_teams_of_dispatcher(dispatcher_id)
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials: {e}')
+    user_id = token_data.id
+    teams = get_teams_of_dispatcher(user_id)
     return teams
-
-
-
-
-@router.get('/status-planperiod')
-def status_planperiod(access_token: str, plan_period_id: int, closed: int):
-    try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
-    except Exception as e:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='wrong cedentials')
-    dispatcher_id = int(token_data.id)
-
-    plan_period_id = int(plan_period_id)
-    closed = bool(closed)
-
-    try:
-        plan_period = change_status_planperiod(plan_period_id, closed, dispatcher_id)
-    except KeyError as e:
-        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Error: {e}')
-
-    return plan_period
 
 
 @router.get('/actors')
@@ -145,9 +107,9 @@ def get_clowns(access_token: str):
     try:
         token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
     except Exception as e:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='wrong cedentials')
-    dispatcher_id = token_data.id
-    actors = get_actors_in_dispatcher_teams(dispatcher_id)
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials: {e}')
+    user_id = token_data.id
+    actors = get_actors_in_dispatcher_teams(user_id)
     return actors
 
 
@@ -157,7 +119,7 @@ def get_avail_days(access_token: str, actor_id: str):
         token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='wrong cedentials')
-    dispatcher_id = token_data.id
-    avail_days = get_avail_days_from_actor(actor_id=actor_id)
+    user_id = token_data.id
+    avail_days = get_avail_days_from_actor(actor_id=user_id)
     return avail_days
 

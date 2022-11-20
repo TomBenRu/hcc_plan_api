@@ -23,4 +23,4 @@ app.include_router(dispatcher.router)
 
 if __name__ == '__main__':
     uvicorn.run(app)
-    # import databases
+    import databases.database

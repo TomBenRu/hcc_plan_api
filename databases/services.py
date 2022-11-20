@@ -10,7 +10,7 @@ from pony.orm.core import Multiset
 from utilities import utils
 from .database import (Team, Person, PlanPeriod, Availables, AvailDay, Project)
 from .enums import TimeOfDay, AuthorizationTypes
-import pydantic_models as pm
+import databases.pydantic_models as pm
 
 
 class CustomError(Exception):
@@ -34,7 +34,6 @@ def make_person__actor_of_team(person: pm.Person, team: pm.Team, user_id: UUID):
         return pm.PersonShow.from_orm(person)
 
 
-
 def get_project_from_user_id(user_id) -> pm.Project:
     with db_session:
         project = Person[user_id].project
@@ -44,7 +43,7 @@ def get_project_from_user_id(user_id) -> pm.Project:
 def get_all_persons(admin_id: UUID) -> list[pm.Person]:
     with db_session:
         try:
-            persons = Person[admin_id].admin_of_project.persons
+            persons = Person[admin_id].project_of_admin.persons
         except Exception as e:
             raise CustomError(f'Error: {e}')
         return [pm.Person.from_orm(p) for p in persons]
@@ -53,25 +52,10 @@ def get_all_persons(admin_id: UUID) -> list[pm.Person]:
 def get_all_project_teams(admin_id: UUID) -> list[pm.Team]:
     with db_session:
         try:
-            teams = Person[admin_id].admin_of_project.teams
+            teams = Person[admin_id].project_of_admin.teams
         except Exception as e:
             raise CustomError(f'Error: {e}')
         return [pm.Team.from_orm(t) for t in teams]
-
-
-def save_new_actor(user: ActorCreateBase):
-    hashed_psw = utils.hash_psw(user.password)
-    user.password = hashed_psw
-
-    with db_session:
-        try:
-            team = Team.get(lambda t: t.name == user.team.name)
-            print(team)
-            person = Person(**user.person.dict())
-            user_in_db = Actor(password=user.password, person=person, team=team)
-        except Exception as e:
-            raise ValueError(e)
-    return user_in_db
 
 
 def find_user_by_email(email: str, authorization: AuthorizationTypes) -> pm.PersonShow | None:
@@ -79,13 +63,13 @@ def find_user_by_email(email: str, authorization: AuthorizationTypes) -> pm.Pers
         person = Person.get(lambda p: p.email == email)
         if person:
             if authorization == AuthorizationTypes.actor:
-                if person.actor_of_team:
+                if person.team_of_actor:
                     return pm.PersonShow.from_orm(person)
             if authorization == AuthorizationTypes.admin:
-                if person.admin_of_project:
+                if person.project_of_admin:
                     return pm.PersonShow.from_orm(person)
             if authorization == AuthorizationTypes.dispatcher:
-                if person.dispatcher_of_teams.select():
+                if person.teams_of_dispatcher.select():
                     return pm.PersonShow.from_orm(person)
         return None
 
@@ -123,7 +107,7 @@ def available_days_to_db(avail_days: dict[str, str], user_id: int):
 def get_open_plan_periods(user_id: UUID) -> list[pm.PlanPerEtFilledIn]:
     with db_session:
         person = Person.get(lambda p: p.id == user_id)
-        actor_team = person.actor_of_team
+        actor_team = person.team_of_actor
         plan_periods = PlanPeriod.select(lambda pp: pp.team == actor_team and not pp.closed)
 
         plan_p_et_filled_in: list[pm.PlanPerEtFilledIn] = []
@@ -137,18 +121,9 @@ def get_open_plan_periods(user_id: UUID) -> list[pm.PlanPerEtFilledIn]:
     return plan_p_et_filled_in
 
 
-def get_plan_periods_from_ids(planperiods: list[int]):
+def get_teams_of_dispatcher(dispatcher_id: UUID) -> list[pm.Team]:
     with db_session:
-        plan_periods = [PlanPeriodBase.from_orm(PlanPeriod[i]) for i in planperiods]
-    return plan_periods
-
-
-def get_past_plan_periods(team_id: str, nbr_past_planperiods: int, only_not_closed: bool = False):
-    """nbr_past_planperiods: positiver Wert -> Anzahl zurückliegender Planperioden.
-       0 -> alle Planperioden"""
-    with db_session:
-        planperiods: list = list(PlanPeriodBase.from_orm(pp) for pp in Team[UUID(team_id)].plan_periods)
-        return planperiods
+        return [pm.Team.from_orm(t) for t in Person[dispatcher_id].teams_of_dispatcher]
 
 
 def get_planperiods_last_recent_date(team_id: str) -> datetime.date:
@@ -161,36 +136,28 @@ def get_planperiods_last_recent_date(team_id: str) -> datetime.date:
         return date
 
 
-def get_all_actors():
-    with db_session:
-        actors = [ActorBase.from_orm(a) for a in Actor.select()]
-    return actors
-
-
 def get_user_by_id(user_id: UUID) -> pm.Person:
     with db_session:
         person = Person[user_id]
         return pm.Person.from_orm(person)
 
 
-def get_actors_in_dispatcher_teams(dispatcher_id: str):
+def get_actors_in_dispatcher_teams(dispatcher_id: UUID) -> list[pm.Person]:
     with db_session:
-        return [{'f_name': actor.f_name, 'l_name': actor.l_name, 'id': actor.id}
-                for actor in Dispatcher[dispatcher_id].teams.actors]
+        return [pm.Person.from_orm(p) for p in Person[dispatcher_id].teams_of_dispatcher.actors]
 
 
-def get_avail_days_from_actor(actor_id: str):
-    actor_id = UUID(actor_id)
+def get_avail_days_from_actor(actor_id: UUID):
     with db_session:
         all_avail_days = {}
-        for availables in Actor[actor_id].availables.select():
+        for availables in Person[actor_id].availabless.select():
             if availables.plan_period.closed:
                 continue
             all_avail_days[availables.id] = {'start': availables.plan_period.start, 'end': availables.plan_period.end}
             notes = availables.notes
             all_avail_days[availables.id]['notes'] = notes
             avail_days = availables.avail_days.select()
-            all_avail_days[availables.id]['avail_days'] = [AvailDayBase.from_orm(ad) for ad in avail_days]
+            all_avail_days[availables.id]['avail_days'] = [pm.AvailDay.from_orm(ad) for ad in avail_days]
         return all_avail_days
 
 
@@ -209,40 +176,6 @@ def create_account(project: pm.ProjectCreate, person: pm.PersonCreate):  # aktue
         new_person.project = new_project
 
         return pm.ProjectShow.from_orm(new_project)
-
-
-def create_actor__remote(person: PersonCreateRemoteBase, team_id: str):  # aktuell
-    with db_session:
-        team_db = Team[team_id]
-        if Actor.get(lambda a: a.email == person.email and a.team.project == team_db.project):
-            raise CustomError("Es ist schon ein Mitarbeiter mit dieser Email vorhanden.")
-        if pers := Person.get(lambda p: p.email == person.email and p.project == team_db.project):
-            if pers.f_name != person.f_name or pers.l_name != person.l_name:
-                raise CustomError('Es gibt bereits eine Person mit dieser Email, '
-                                  'aber die sonstigen Personendaten stimmen nicht überein.')
-            else:
-                person_db = pers
-        else:
-            person.project = team_db.project
-            person_db = Person(**person.dict())
-        password = secrets.token_urlsafe(8)
-        hashed_psw = utils.hash_psw(password)
-        new_actor = Actor(person=person_db, team=team_db, password=hashed_psw)
-        return {'actor': ActorShowBase.from_orm(new_actor), 'password': password}
-
-
-def get_teams_of_dispatcher(dispatcher_id: UUID):
-    with db_session:
-        teams = Dispatcher[dispatcher_id].teams.select()
-        return [TeamShowBase.from_orm(t) for t in teams]
-
-
-def get_team_by_name(name: str) -> TeamBase:
-    with db_session:
-        team = Team.get(lambda t: t.name == name)
-        if not team:
-            raise KeyError({'detail': f'Kein Team mit Namen: {name}'})
-        return TeamBase.from_orm(team)
 
 
 def create_new_plan_period(team_id: str, date_start: datetime.date | None, date_end: datetime.date,
@@ -264,19 +197,11 @@ def create_new_plan_period(team_id: str, date_start: datetime.date | None, date_
 
         plan_period = PlanPeriod(start=date_start, end=date_end, deadline=deadline, notes=notes,
                                  team=Team.get(lambda t: t.id == UUID(team_id)))
-        return PlanPeriodBase.from_orm(plan_period)
+        return pm.PlanPeriod.from_orm(plan_period)
 
 
 def change_status_planperiod(plan_period_id: int, closed: bool, dispatcher_id: int):
-    with db_session:
-        try:
-            plan_period = PlanPeriod[plan_period_id]
-        except Exception as e:
-            raise KeyError(f'Die Planperiode mit ID: {plan_period_id} ist nicht vorhanden')
-        if Dispatcher[dispatcher_id] not in PlanPeriod[plan_period_id].dispatchers:
-            raise KeyError(f'Die Planperiode mit ID: {plan_period_id} ist nicht vorhanden.')
-        plan_period.closed = closed
-        return PlanPeriodBase.from_orm(plan_period)
+    pass
 
 
 if __name__ == '__main__':
