@@ -8,7 +8,7 @@ from .enums import TimeOfDay
 
 class ProjectCreate(BaseModel):
     name: str
-    admin: Optional['Person']
+    # admin: Optional['Person']
 
     class Config:
         orm_mode = True
@@ -31,17 +31,18 @@ class PersonCreate(BaseModel):
 
     class Config:
         orm_mode = True
-        arbitrary_types_allowed = True
 
 
 class Person(PersonCreate):
     id: UUID
+    project: Project
+
 
 
 class PersonShow(Person):
     project_of_admin: Optional[Project]
-    teams_of_dispatcher = List['Team']
-    team_of_actor = Optional['Team']
+    teams_of_dispatcher: List['Team']
+    team_of_actor: Optional['Team']
 
     @validator('teams_of_dispatcher', pre=True, allow_reuse=True)
     def pony_set_to_list(cls, values):
@@ -78,7 +79,7 @@ class Availables(AvailablesCreate):
 
 
 class AvailablesShow(Availables):
-    avail_days: list['AvailDay']
+    avail_days: List['AvailDay']
 
     @validator('avail_days', pre=True, allow_reuse=True)
     def pony_set_to_list(cls, values):
@@ -102,12 +103,12 @@ class PlanPeriod(PlanPeriodCreate):
 
 
 class PlanPeriodShow(PlanPeriod):
-    availabless: list[Availables]
+    availabless: List[Availables]
 
     @property
     def all_days(self):
         delta: timedelta = self.end - self.start
-        all_days: list[datetime.date] = []
+        all_days: List[datetime.date] = []
         for i in range(delta.days + 1):
             day = self.start + timedelta(days=i)
             all_days.append(day)
@@ -164,8 +165,9 @@ class TokenData(BaseModel):
     authorization: Optional[str]
 
 
-AvailablesShow.update_forward_refs(**locals())
-TeamShow.update_forward_refs(**locals())
 ProjectCreate.update_forward_refs(**locals())
+Project.update_forward_refs(**locals())
 PersonShow.update_forward_refs(**locals())
 PersonCreate.update_forward_refs(**locals())
+AvailablesShow.update_forward_refs(**locals())
+TeamShow.update_forward_refs(**locals())

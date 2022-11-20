@@ -36,7 +36,7 @@ class Person(db_actors.Entity):
     team_of_actor = Optional('Team', reverse='actors')
     availabless = Set('Availables')
 
-    composite_key(f_name, l_name, project)
+    # composite_key(f_name, l_name, project)
 
 
 class Team(db_actors.Entity):

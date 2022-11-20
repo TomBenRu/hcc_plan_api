@@ -3,12 +3,10 @@ from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from pony.orm import db_session
 
 from databases.enums import AuthorizationTypes
-from databases.pony_models import Person
 import databases.pydantic_models as pm
 from databases.services import find_user_by_email, create_new_team, get_project_from_user_id, \
     get_all_persons, get_all_project_teams, create_person
 from oauth2_authentication import create_access_token, verify_admin_username, verify_access_token, verify_user_password
-from utilities import utils
 
 router = APIRouter(prefix='/admin', tags=['Admin'])
 
@@ -68,6 +66,7 @@ def get_project(access_token: str):
 
 @router.post('/person')
 def add_new_person(token: pm.Token, person: pm.PersonCreate):
+    pass
     try:
         token_data = verify_access_token(token.access_token, authorization=AuthorizationTypes.admin)
     except Exception as e:

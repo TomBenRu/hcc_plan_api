@@ -7,9 +7,9 @@ import tkinter.ttk as ttk
 
 import requests
 import tkcalendar
+from pydantic import EmailStr
 
-from databases.pydantic_models import TeamShowBase, ProjectBase, PersonBase, PersonCreateRemoteBase, Token, \
-    PersonShowBase, TeamCreateBase, DispatcherShowBase, DispatcherCreateBase
+import databases.pydantic_models as pm
 
 local = True
 
@@ -27,7 +27,7 @@ class MainFrame(ttk.Frame):
         self.host: str | None = None
 
         self.access_token: str | None = None
-        self.project: ProjectBase | None = None
+        self.project: pm.Project | None = None
         self.all_actors: list[dict[str, str]] | None = None
         self.avail_days = {}
         self.planperiod = None
@@ -62,6 +62,7 @@ class MainFrame(ttk.Frame):
 
     def new_project(self):
         self.text_log.insert('end', '- new Project\n')
+        CreateNewProject(self)
 
     def new_person(self):
         self.text_log.insert('end', '- new person\n')
@@ -112,6 +113,16 @@ class MainFrame(ttk.Frame):
         LoginWindow(self, self.host)
 
 
+class CommonTopLevel(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.grab_set()
+        self.focus_set()
+        self.bind('<Escape>', lambda e: self.destroy())
+
+        self.parent = parent
+
+
 class Settings(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
@@ -131,7 +142,7 @@ class Settings(tk.Toplevel):
 
         self.var_chk_save_settings_data = tk.BooleanVar(value=True)
         self.chk_save_settings_data = tk.Checkbutton(self.frame_main, text='Zugangsdaten speichern?',
-                                                   variable=self.var_chk_save_settings_data)
+                                                     variable=self.var_chk_save_settings_data)
         self.chk_save_settings_data.grid(row=3, column=0, columnspan=2, pady=(5, 10))
 
         self.bt_ok = tk.Button(self.frame_main, text='okay', width=15, command=self.save_settings)
@@ -262,7 +273,25 @@ class LoginWindow(tk.Toplevel):
     def get_project(self, prefix: str):
         response = requests.get(f'{self.host}/{prefix}/project',
                                 params={'access_token': self.parent.access_token})
-        self.parent.project = ProjectBase(**response.json())
+        self.parent.project = pm.Project(**response.json())
+
+
+class CreateNewProject(CommonTopLevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.new_project()
+
+    def new_project(self):
+        person = pm.PersonCreate(f_name='Thomas', l_name='Ruff', email=EmailStr('mail@thomas-ruff.de'),
+                                 password='mario')
+        project = pm.ProjectCreate(name='HumorCanCare')
+        access_token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
+        response = requests.post(f'{self.parent.host}/su/account',
+                                 json={'person': person.dict(), 'project': project.dict(),
+                                       'access_token': access_token.dict()})
+        print(response.json())
+
 
 
 class GetAvailDays(tk.Toplevel):
@@ -359,36 +388,7 @@ class CreateTeam(tk.Toplevel):
             self.new_team()
 
     def save(self):
-        key_team: TeamShowBase | str | None = self.values_combo_teams.get(self.var_combo_teams.get())
-        key_person: PersonShowBase | str | None = self.values_combo_persons.get(self.var_combo_persons.get())
-        if key_team == '-1' or key_person == '-1':
-            tk.messagebox.showinfo(parent=self, message='Beide Felder müssen korrekt ausgefüllt sein.')
-            return
-        admin_token = Token(access_token=self.parent.access_token, token_type='bearer')
-        if not key_person:
-            f_name, l_name, email = self.var_combo_persons.get().split(' ')
-            response = requests.post(f'{self.host}/admin/person',
-                                     json={'token': admin_token.dict(),
-                                           'person': PersonCreateRemoteBase(f_name=f_name, l_name=l_name,
-                                                                            email=email).dict()})
-            data = response.json()
-            if type(data) == dict and data.get('status_code') and data['status_code'] > 401:
-                tk.messagebox.showerror(parent=self, message=data)
-                self.destroy()
-            person = PersonShowBase(**data)
-        else:
-            person = key_person
-
-        response = requests.post()
-
-        if not key_team:
-            name = self.var_combo_teams.get()
-
-
-            response = requests.post(f'{self.host}/admin/team',
-                                     json={'token': admin_token.dict(),
-                                           'team': TeamCreateBase(project=self.parent.project, name=name).dict(),
-                                           'dispatcher': DispatcherCreateBase(person=person, project=self.parent)})
+        pass
 
 
 
@@ -398,7 +398,7 @@ class CreateTeam(tk.Toplevel):
         if type(data) == dict and data.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
             self.destroy()
-        return sorted((PersonShowBase(**p) for p in data), key=lambda person: person.f_name)
+        return sorted((pm.PersonShow(**p) for p in data), key=lambda person: person.f_name)
 
     def get_teams(self):
         response = requests.get(f'{self.host}/admin/teams', params={'access_token': self.parent.access_token})
@@ -406,7 +406,7 @@ class CreateTeam(tk.Toplevel):
         if type(data) == dict and data.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
             self.destroy()
-        return sorted((TeamShowBase(**t) for t in data), key=lambda team: team.name)
+        return sorted((pm.TeamShow(**t) for t in data), key=lambda team: team.name)
 
     def new_team(self):
         class NewTeam(tk.Toplevel):
@@ -476,7 +476,7 @@ class CreatePlanperiod(tk.Toplevel):
         self.host = host
 
         self.date = datetime.datetime.now()
-        self.teams: list[TeamShowBase] | None = None
+        self.teams: list[pm.TeamShow] | None = None
         self.values_combo_teams: dict[str, str] | None = None
 
         self.frame_team = ttk.Frame(self, padding='20 20 20 20')
@@ -530,7 +530,7 @@ class CreatePlanperiod(tk.Toplevel):
         if type(data) == dict and data.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
             self.destroy()
-        self.teams = [TeamShowBase(**team) for team in data]
+        self.teams = [pm.TeamShow(**team) for team in data]
         self.values_combo_teams = {team.name: team.id for team in self.teams}
         self.var_combo_teams.set(self.teams[0].name)
         self.combo_teams.config(values=list(self.values_combo_teams))
@@ -579,6 +579,9 @@ class MainMenu(tk.Menu):
         self.export = tk.Menu(self, tearoff=0)
         self.add_cascade(label='Export', underline=0, menu=self.export)
 
+        self.supervisor = tk.Menu(self, tearoff=0)
+        self.add_cascade(label='Supervisor', underline=0, menu=self.supervisor)
+
         self.fetch_data = tk.Menu(self, tearoff=0)
         self.add_cascade(label='Import', underline=0, menu=self.fetch_data)
 
@@ -592,6 +595,8 @@ class MainMenu(tk.Menu):
         self.add_cascade(label='login', underline=0, command=parent.login)
 
         self.file.add_command(label='Einstellungen', command=parent.settings)
+
+        self.supervisor.add_command(label='Neues Projekt', command=parent.new_project)
 
         self.new_data.add_command(label='Neues Projekt', command=parent.new_project)
         self.new_data.add_command(label='Neue/r Mitarbeiter:in', command=parent.new_person)

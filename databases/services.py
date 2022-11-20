@@ -5,7 +5,8 @@ from typing import Type
 from uuid import UUID
 
 from pony.orm import Database, db_session, select, TransactionIntegrityError
-from pony.orm.core import Multiset
+from pony.orm.core import Multiset, flush, commit
+from pydantic import EmailStr
 
 from utilities import utils
 from .database import (Team, Person, PlanPeriod, Availables, AvailDay, Project)
@@ -167,15 +168,16 @@ def create_new_team(team: pm.TeamCreate):
         return pm.TeamShow.from_orm(new_team)
 
 
-def create_account(project: pm.ProjectCreate, person: pm.PersonCreate):  # aktuell
-    password = secrets.token_urlsafe(8)
+def create_account(project: pm.ProjectCreate, person: pm.PersonCreate):
+    if not (password := person.password):
+        password = secrets.token_urlsafe(8)
     hashed_psw = utils.hash_psw(password)
     with db_session:
         new_project = Project(name=project.name)
-        new_person = Person(**person.dict())
-        new_person.project = new_project
+        new_person = Person(f_name=person.f_name, l_name=person.l_name, email=person.email, password=hashed_psw,
+                            project=new_project, project_of_admin=new_project)
 
-        return pm.ProjectShow.from_orm(new_project)
+        return {'admin': pm.PersonShow.from_orm(new_person), 'password': password}
 
 
 def create_new_plan_period(team_id: str, date_start: datetime.date | None, date_end: datetime.date,
