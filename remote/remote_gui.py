@@ -44,8 +44,11 @@ class MainFrame(ttk.Frame):
         self.lb_title = tk.Label(self.frame_title, text='Verlauf:', justify='left', font=30,)
         self.lb_title.grid()
 
-        self.text_log = tk.Text(self.frame_log, width=90, height=30, bg='#afe0ff')
-        self.text_log.grid()
+        self.scroll_text_log = tk.Scrollbar(self.frame_log, orient='vertical')
+        self.scroll_text_log.pack(side='right', fill='y')
+        self.text_log = tk.Text(self.frame_log, width=90, height=30, bg='#afe0ff', yscrollcommand=self.scroll_text_log.set)
+        self.text_log.pack(side='left')
+        self.scroll_text_log.config(command=self.text_log.yview)
 
         self.get_host()
         self.login()
@@ -589,6 +592,12 @@ class MainMenu(tk.Menu):
         self.supervisor = tk.Menu(self, tearoff=0)
         self.add_cascade(label='Supervisor', underline=0, menu=self.supervisor)
 
+        self.admin = tk.Menu(self, tearoff=0)
+        self.add_cascade(label='Admin', underline=0, menu=self.admin)
+
+        self.dispatcher = tk.Menu(self, tearoff=0)
+        self.add_cascade(label='Dispatcher', underline=0, menu=self.dispatcher)
+
         self.fetch_data = tk.Menu(self, tearoff=0)
         self.add_cascade(label='Import', underline=0, menu=self.fetch_data)
 
@@ -605,11 +614,11 @@ class MainMenu(tk.Menu):
 
         self.supervisor.add_command(label='Neues Projekt', command=parent.new_project)
 
-        self.new_data.add_command(label='Neues Projekt', command=parent.new_project)
-        self.new_data.add_command(label='Neue/r Mitarbeiter:in', command=parent.new_person)
+        self.admin.add_command(label='Neues Team', command=parent.new_team)
+        self.admin.add_command(label='Neue/r Mitarbeiter:in', command=parent.new_person)
+        self.admin.add_command(label='Neue/r Planer:in', command=parent.new_dispatcher)
+
         self.new_data.add_command(label='Neue/r Admin', command=parent.new_admin)
-        self.new_data.add_command(label='Neue/r Planer:in', command=parent.new_dispatcher)
-        self.new_data.add_command(label='Neues Team', command=parent.new_team)
         self.new_data.add_command(label='Neue/r Clown', command=parent.new_actor)
         self.new_data.add_command(label='Neue Planperiode', command=parent.new_planperiod)
 
