@@ -435,7 +435,31 @@ class AssignPersonToPosition(CommonTopLevel):
         pass
 
     def new_selection_admin(self):
-        print(self.var_chk_admin.get())
+        if not self.var_combo_persons.get():
+            self.var_chk_admin.set(False)
+            return
+
+        selected_person = self.all_persons_dict_for_combo[self.var_combo_persons.get()]
+        if self.var_chk_admin.get():
+            for p in self.all_persons:
+                if p == selected_person:
+                    continue
+                if p.project_of_admin:
+                    if not tk.messagebox.askyesno(parent=self,
+                                                  message=f'"{p.f_name} {p.l_name}" ist bereits Admin des Projekts.\n'
+                                                          f'Wollen Sie diese Position "{selected_person.f_name} '
+                                                          f'{selected_person.l_name}" neu zuordnen?'):
+                        self.var_chk_admin.set(False)
+                        return
+                    selected_person.project_of_admin = selected_person.project
+                    p.project_of_admin = None
+                    return
+        else:
+            tk.messagebox.showinfo(parent=self, message=f'Es muss genau einen Admin für Ihr Projekt vorhanden sein.\n'
+                                                        f'Um diese Position einem anderen Mitarbeiter zuzuordnen,'
+                                                        f'wählen Sie bitte diesen Mitarbeiter aus.')
+            self.var_chk_admin.set(True)
+            return
 
     def new_selection_team(self, profession: Literal['actor', 'dispatcher']):
         pass
