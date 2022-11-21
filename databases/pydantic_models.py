@@ -38,7 +38,6 @@ class Person(PersonCreate):
     project: Project
 
 
-
 class PersonShow(Person):
     project_of_admin: Optional[Project]
     teams_of_dispatcher: List['Team']

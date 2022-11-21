@@ -45,13 +45,13 @@ def get_project_from_user_id(user_id) -> pm.Project:
         return pm.Project.from_orm(project)
 
 
-def get_all_persons(admin_id: UUID) -> list[pm.Person]:
+def get_all_persons(admin_id: UUID) -> list[pm.PersonShow]:
     with db_session:
         try:
             persons = Person[admin_id].project_of_admin.persons
         except Exception as e:
             raise CustomError(f'Error: {e}')
-        return [pm.Person.from_orm(p) for p in persons]
+        return [pm.PersonShow.from_orm(p) for p in persons]
 
 
 def get_all_project_teams(admin_id: UUID) -> list[pm.Team]:

@@ -4,6 +4,7 @@ import time
 import tkinter as tk
 import tkinter.messagebox
 import tkinter.ttk as ttk
+from typing import Literal
 
 import requests
 import tkcalendar
@@ -91,6 +92,9 @@ class MainFrame(ttk.Frame):
         create_team = CreateTeam(self)
         self.wait_window(create_team)
         self.text_log.insert('end', f'-- {self.new_team_data}\n')
+
+    def assign_person_to_position(self):
+        assign_person = AssignPersonToPosition(self)
 
     def new_actor(self):
         self.text_log.insert('end', '- new actor\n')
@@ -377,6 +381,110 @@ class CreatePerson(CommonTopLevel):
         response = requests.post(f'{self.parent.host}/admin/person',
                                  json={'token': token.dict(), 'person': person.dict()})
         self.parent.new_person_data = response.json()
+        self.destroy()
+
+
+class AssignPersonToPosition(CommonTopLevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.bind('<Return>', lambda event: self.assign())
+
+        self.all_persons = self.get_persons()
+        self.all_teams = self.get_teams()
+        self.all_persons_dict_for_combo: dict[str, pm.PersonShow] = self.make_dict_for_widgets('person')
+        self.all_teams_dict_for_radio_chk = self.make_dict_for_widgets('team')
+        self.all_checks_team = {}
+
+        self.var_combo_persons = tk.StringVar()
+        self.var_chk_admin = tk.BooleanVar()
+        self.var_radio_teams_actor = tk.StringVar(value='kein Team')
+
+        self.lb_combo_persons = tk.Label(self.frame_input, text='Mitarbeiter:in:')
+        self.lb_combo_persons.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 5))
+        self.combo_persons = ttk.Combobox(self.frame_input, values=list(self.all_persons_dict_for_combo),
+                                          textvariable=self.var_combo_persons, state='readonly')
+        self.combo_persons.bind('<<ComboboxSelected>>', lambda event: self.new_selection_person())
+        self.combo_persons.grid(row=0, column=1, sticky='w', padx=(5, 0), pady=(0, 5))
+
+        self.frame_checks = ttk.Frame(self.frame_input, padding='10 00 10 00')
+        self.frame_checks.grid(row=1, column=0, columnspan=2)
+
+        self.chk_admin = tk.Checkbutton(self.frame_checks,
+                                        text=f'... ist Admin für Projekt {self.all_persons[0].project.name}.',
+                                        variable=self.var_chk_admin, command=self.new_selection_admin)
+        self.chk_admin.grid(row=0, column=0, columnspan=3)
+
+        tk.Label(self.frame_checks, text='Spieler:in').grid(row=1, column=1, sticky='w', padx=(5, 5), pady=(10, 5))
+        tk.Label(self.frame_checks, text='Planer:in').grid(row=1, column=2, sticky='w', padx=(5, 5), pady=(10, 5))
+        for i, (id_team, team) in enumerate(self.all_teams_dict_for_radio_chk.items(), start=2):
+            tk.Label(self.frame_checks,
+                     text=f'Team {team.name}').grid(row=i, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+            tk.Radiobutton(self.frame_checks, variable=self.var_radio_teams_actor, value=str(id_team),
+                           command=lambda: self.new_selection_team(profession='actor')).grid(row=i, column=1, padx=5, pady=5)
+            self.all_checks_team[team.id] = tk.Checkbutton(self.frame_checks,
+                                                           command=lambda: self.new_selection_team('dispatcher'))
+            self.all_checks_team[team.id].grid(row=i, column=2, padx=(5, 0), pady=5)
+        tk.Label(self.frame_checks, text=f'Keinem Team zugeordnet').grid(row=len(self.all_teams)+2, column=0,
+                                                                         sticky='e', padx=(0, 5), pady=(5, 0))
+        tk.Radiobutton(self.frame_checks, variable=self.var_radio_teams_actor, value='kein Team',
+                       command=lambda: self.new_selection_team(profession='actor')).grid(row=len(self.all_teams)+2,
+                                                                                         column=1, padx=5, pady=(5, 0))
+
+
+    def assign(self):
+        pass
+
+    def new_selection_admin(self):
+        print(self.var_chk_admin.get())
+
+    def new_selection_team(self, profession: Literal['actor', 'dispatcher']):
+        pass
+
+    def new_selection_person(self):
+        selectet = self.var_combo_persons.get()
+        person = self.all_persons_dict_for_combo[selectet]
+
+        if person.project_of_admin:
+            self.var_chk_admin.set(True)
+        else:
+            self.var_chk_admin.set(False)
+
+        if team := person.team_of_actor:
+            self.var_radio_teams_actor.set(str(team.id))
+        else:
+            self.var_radio_teams_actor.set('kein Team')
+
+        for chk_bt in self.all_checks_team.values():
+            chk_bt.deselect()
+        if person.teams_of_dispatcher:
+            for team in person.teams_of_dispatcher:
+                self.all_checks_team[team.id].select()
+
+
+
+    def get_persons(self):
+        response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.parent.access_token})
+        all_persons = sorted([pm.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
+        return all_persons
+
+    def get_teams(self):
+        response = requests.get(f'{self.parent.host}/admin/teams',
+                                params={'access_token': self.parent.access_token})
+        data = response.json()
+        if type(data) == dict and data.get('status_code') == 401:
+            tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
+            self.destroy()
+
+        return sorted([pm.TeamShow(**team) for team in data], key=lambda t: t.name)
+
+    def make_dict_for_widgets(self, combo_type: Literal['person', 'team']):
+        if combo_type == 'person':
+            return {f'{p.f_name} {p.l_name}': p for p in self.all_persons}
+        if combo_type == 'team':
+            return {t.id: t for t in self.all_teams}
+
+    def new_selection_team_actor(self):
+        pass
 
 
 class GetAvailDays(tk.Toplevel):
@@ -617,6 +725,7 @@ class MainMenu(tk.Menu):
         self.admin.add_command(label='Neues Team', command=parent.new_team)
         self.admin.add_command(label='Neue/r Mitarbeiter:in', command=parent.new_person)
         self.admin.add_command(label='Neue/r Planer:in', command=parent.new_dispatcher)
+        self.admin.add_command(label='Mitarbeiter:in einer Position zuweisen', command=parent.assign_person_to_position)
 
         self.new_data.add_command(label='Neue/r Admin', command=parent.new_admin)
         self.new_data.add_command(label='Neue/r Clown', command=parent.new_actor)
@@ -634,3 +743,7 @@ if __name__ == '__main__':
     mainframe.pack()
     root.menubar = MainMenu(parent=mainframe, root=root)
     root.mainloop()
+
+"""
+'person': {'f_name': 'Pia', 'l_name': 'Pacher', 'email': 'pia.pacher@funmail.com', 'password': 'ujEOf4YDVj0'}
+"""
