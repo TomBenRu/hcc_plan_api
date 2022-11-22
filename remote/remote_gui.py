@@ -5,10 +5,11 @@ import tkinter as tk
 import tkinter.messagebox
 import tkinter.ttk as ttk
 from typing import Literal
+from uuid import UUID
 
 import requests
 import tkcalendar
-from pydantic import EmailStr
+from pydantic import EmailStr, BaseModel
 
 import databases.pydantic_models as pm
 from remote.tools import PlaceholderEntry
@@ -390,15 +391,19 @@ class AssignPersonToPosition(CommonTopLevel):
         self.bind('<Return>', lambda event: self.assign())
 
         self.all_persons = self.get_persons()
+        print(self.all_persons)
         self.all_teams = self.get_teams()
         self.all_persons_dict_for_combo: dict[str, pm.PersonShow] = self.make_dict_for_widgets('person')
-        self.all_teams_dict_for_radio_chk = self.make_dict_for_widgets('team')
+        self.all_teams_dict_for_radio_chk: dict[str: str] = self.make_dict_for_widgets('team')
+
         self.all_checks_team = {}
+        self.vars_all_checks_team = {}
 
         self.var_combo_persons = tk.StringVar()
         self.var_chk_admin = tk.BooleanVar()
         self.var_radio_teams_actor = tk.StringVar(value='kein Team')
 
+        '''Widget for selections'''
         self.lb_combo_persons = tk.Label(self.frame_input, text='Mitarbeiter:in:')
         self.lb_combo_persons.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 5))
         self.combo_persons = ttk.Combobox(self.frame_input, values=list(self.all_persons_dict_for_combo),
@@ -406,7 +411,7 @@ class AssignPersonToPosition(CommonTopLevel):
         self.combo_persons.bind('<<ComboboxSelected>>', lambda event: self.new_selection_person())
         self.combo_persons.grid(row=0, column=1, sticky='w', padx=(5, 0), pady=(0, 5))
 
-        self.frame_checks = ttk.Frame(self.frame_input, padding='10 00 10 00')
+        self.frame_checks = ttk.Frame(self.frame_input, padding='00 10 00 00')
         self.frame_checks.grid(row=1, column=0, columnspan=2)
 
         self.chk_admin = tk.Checkbutton(self.frame_checks,
@@ -419,11 +424,13 @@ class AssignPersonToPosition(CommonTopLevel):
         for i, (id_team, team) in enumerate(self.all_teams_dict_for_radio_chk.items(), start=2):
             tk.Label(self.frame_checks,
                      text=f'Team {team.name}').grid(row=i, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
-            tk.Radiobutton(self.frame_checks, variable=self.var_radio_teams_actor, value=str(id_team),
+            tk.Radiobutton(self.frame_checks, variable=self.var_radio_teams_actor, value=id_team,
                            command=lambda: self.new_selection_team(profession='actor')).grid(row=i, column=1, padx=5, pady=5)
-            self.all_checks_team[team.id] = tk.Checkbutton(self.frame_checks,
+            self.vars_all_checks_team[id_team] = tk.BooleanVar()
+            self.all_checks_team[id_team] = tk.Checkbutton(self.frame_checks,
+                                                           variable=self.vars_all_checks_team[id_team],
                                                            command=lambda: self.new_selection_team('dispatcher'))
-            self.all_checks_team[team.id].grid(row=i, column=2, padx=(5, 0), pady=5)
+            self.all_checks_team[id_team].grid(row=i, column=2, padx=(5, 0), pady=5)
         tk.Label(self.frame_checks, text=f'Keinem Team zugeordnet').grid(row=len(self.all_teams)+2, column=0,
                                                                          sticky='e', padx=(0, 5), pady=(5, 0))
         tk.Radiobutton(self.frame_checks, variable=self.var_radio_teams_actor, value='kein Team',
@@ -433,6 +440,26 @@ class AssignPersonToPosition(CommonTopLevel):
 
     def assign(self):
         pass
+
+    def new_selection_person(self):
+        selectet = self.var_combo_persons.get()
+        person = self.all_persons_dict_for_combo[selectet]
+
+        if person.project_of_admin:
+            self.var_chk_admin.set(True)
+        else:
+            self.var_chk_admin.set(False)
+
+        if team := person.team_of_actor:
+            self.var_radio_teams_actor.set(str(team.id))
+        else:
+            self.var_radio_teams_actor.set('kein Team')
+
+        for var_chk_bt in self.vars_all_checks_team.values():
+            var_chk_bt.set(False)
+        if person.teams_of_dispatcher:
+            for team in person.teams_of_dispatcher:
+                self.vars_all_checks_team[str(team.id)].set(True)
 
     def new_selection_admin(self):
         if not self.var_combo_persons.get():
@@ -451,7 +478,7 @@ class AssignPersonToPosition(CommonTopLevel):
                                                           f'{selected_person.l_name}" neu zuordnen?'):
                         self.var_chk_admin.set(False)
                         return
-                    selected_person.project_of_admin = selected_person.project
+                    selected_person.project_of_admin = True
                     p.project_of_admin = None
                     return
         else:
@@ -462,29 +489,30 @@ class AssignPersonToPosition(CommonTopLevel):
             return
 
     def new_selection_team(self, profession: Literal['actor', 'dispatcher']):
-        pass
-
-    def new_selection_person(self):
-        selectet = self.var_combo_persons.get()
-        person = self.all_persons_dict_for_combo[selectet]
-
-        if person.project_of_admin:
-            self.var_chk_admin.set(True)
-        else:
-            self.var_chk_admin.set(False)
-
-        if team := person.team_of_actor:
-            self.var_radio_teams_actor.set(str(team.id))
-        else:
+        person_fullname = self.var_combo_persons.get()
+        if not person_fullname:
             self.var_radio_teams_actor.set('kein Team')
+            return
+        person = self.all_persons_dict_for_combo[person_fullname]
+        if profession == 'actor':
+            team_id: str = self.var_radio_teams_actor.get()
+            person.team_of_actor = self.all_teams_dict_for_radio_chk[team_id]
+            return
 
-        for chk_bt in self.all_checks_team.values():
-            chk_bt.deselect()
-        if person.teams_of_dispatcher:
-            for team in person.teams_of_dispatcher:
-                self.all_checks_team[team.id].select()
-
-
+        if profession == 'dispatcher':
+            for team_id, var_chk_bt in self.vars_all_checks_team.items():
+                if var_chk_bt.get():
+                    for p in self.all_persons_dict_for_combo.values():
+                        if p == person:
+                            continue
+                        if team_id in (disp_teams := {str(t.id): t for t in p.teams_of_dispatcher}):
+                            if tk.messagebox.askyesno(parent=self,
+                                              message=f'Der/die Planer:in des Teams "{disp_teams[team_id].name}" '
+                                                      f'ist zurzeit "{p.f_name} {p.l_name}".\n'
+                                                      f'Soll diese Position mit "{person.f_name} {person.l_name}" '
+                                                      f'neu besetzt werden?'):
+                                p.teams_of_dispatcher.remove(disp_teams[team_id])
+                                person.teams_of_dispatcher.append(disp_teams[team_id])
 
     def get_persons(self):
         response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.parent.access_token})
@@ -499,16 +527,13 @@ class AssignPersonToPosition(CommonTopLevel):
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
             self.destroy()
 
-        return sorted([pm.TeamShow(**team) for team in data], key=lambda t: t.name)
+        return sorted([pm.Team(**team) for team in data], key=lambda t: t.name)
 
     def make_dict_for_widgets(self, combo_type: Literal['person', 'team']):
         if combo_type == 'person':
             return {f'{p.f_name} {p.l_name}': p for p in self.all_persons}
         if combo_type == 'team':
-            return {t.id: t for t in self.all_teams}
-
-    def new_selection_team_actor(self):
-        pass
+            return {str(t.id): t for t in self.all_teams}
 
 
 class GetAvailDays(tk.Toplevel):
