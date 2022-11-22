@@ -391,7 +391,6 @@ class AssignPersonToPosition(CommonTopLevel):
         self.bind('<Return>', lambda event: self.assign())
 
         self.all_persons = self.get_persons()
-        print(self.all_persons)
         self.all_teams = self.get_teams()
         self.all_persons_dict_for_combo: dict[str, pm.PersonShow] = self.make_dict_for_widgets('person')
         self.all_teams_dict_for_radio_chk: dict[str: str] = self.make_dict_for_widgets('team')
@@ -490,16 +489,22 @@ class AssignPersonToPosition(CommonTopLevel):
 
     def new_selection_team(self, profession: Literal['actor', 'dispatcher']):
         person_fullname = self.var_combo_persons.get()
-        if not person_fullname:
-            self.var_radio_teams_actor.set('kein Team')
-            return
-        person = self.all_persons_dict_for_combo[person_fullname]
+
+        if person_fullname:
+            person = self.all_persons_dict_for_combo[person_fullname]
+
         if profession == 'actor':
+            if not person_fullname:
+                self.var_radio_teams_actor.set('kein Team')
+                return
             team_id: str = self.var_radio_teams_actor.get()
             person.team_of_actor = self.all_teams_dict_for_radio_chk[team_id]
             return
 
         if profession == 'dispatcher':
+            if not person_fullname:
+                for var in self.vars_all_checks_team.values():
+                    var.set(False)
             for team_id, var_chk_bt in self.vars_all_checks_team.items():
                 if var_chk_bt.get():
                     for p in self.all_persons_dict_for_combo.values():
