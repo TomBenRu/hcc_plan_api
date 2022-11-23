@@ -78,6 +78,7 @@ class Availables(AvailablesCreate):
 
 
 class AvailablesShow(Availables):
+    plan_period: 'PlanPeriod'
     avail_days: List['AvailDay']
 
     @validator('avail_days', pre=True, allow_reuse=True)
