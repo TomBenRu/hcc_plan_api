@@ -37,6 +37,7 @@ class MainFrame(ttk.Frame):
         self.all_actors: list[dict[str, str]] | None = None
         self.avail_days = {}
         self.planperiod = None
+        self.new_jobs = None
 
         self.frame_title = ttk.Frame(self, padding='20 20 20 00')
         self.frame_title.pack(fill='x', expand=True)
@@ -95,7 +96,10 @@ class MainFrame(ttk.Frame):
         self.text_log.insert('end', f'-- {self.new_team_data}\n')
 
     def assign_person_to_position(self):
+        self.text_log.insert('end', '- new jobs for persons\n')
         assign_person = AssignPersonToPosition(self)
+        self.wait_window(assign_person)
+        self.text_log.insert('end', f'-- {self.new_jobs}\n')
 
     def new_actor(self):
         self.text_log.insert('end', '- new actor\n')
@@ -388,7 +392,10 @@ class CreatePerson(CommonTopLevel):
 class AssignPersonToPosition(CommonTopLevel):
     def __init__(self, parent):
         super().__init__(parent)
-        self.bind('<Return>', lambda event: self.assign())
+        self.bind('<Return>', lambda event: self.update_to_db())
+
+        self.id_of_old_amin = None
+        self.id_of_actual_admin = None
 
         self.all_persons = self.get_persons()
         self.all_teams = self.get_teams()
@@ -436,9 +443,25 @@ class AssignPersonToPosition(CommonTopLevel):
                        command=lambda: self.new_selection_team(profession='actor')).grid(row=len(self.all_teams)+2,
                                                                                          column=1, padx=5, pady=(5, 0))
 
+        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=15, command=self.update_to_db)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 5))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=15, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
 
-    def assign(self):
-        pass
+    def update_to_db(self):
+        token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
+        all_persons = {k: json.loads(v.json()) for k, v in self.all_persons_dict_for_combo.items()}
+
+        response = requests.put(f'{self.parent.host}/admin/update_all_persons',
+                                json={'token': token.dict(), 'all_persons': all_persons})
+        if self.id_of_old_amin != self.id_of_actual_admin:
+            self.parent.access_token = None  # kann man lassen, wenn automatische Rechte vergeben werden!
+            new_admin = self.all_persons_dict_for_combo[str(self.id_of_actual_admin)]
+            tk.messagebox.showwarning(parent=self, title='Admin Login',
+                                      message=f'Sie wurden als Admin ausgeloggt. Neuer Admin des Projekts ist:\n'
+                                              f'"{new_admin.f_name} {new_admin.l_name}."')
+        self.parent.new_jobs = response.json()
+        self.destroy()
 
     def new_selection_person(self):
         selectet = self.var_combo_persons.get()
@@ -477,8 +500,11 @@ class AssignPersonToPosition(CommonTopLevel):
                                                           f'{selected_person.l_name}" neu zuordnen?'):
                         self.var_chk_admin.set(False)
                         return
-                    selected_person.project_of_admin = True
+                    selected_person.project_of_admin = selected_person.project
+                    self.id_of_actual_admin = selected_person.id
+                    self.id_of_old_amin = p.id
                     p.project_of_admin = None
+
                     return
         else:
             tk.messagebox.showinfo(parent=self, message=f'Es muss genau einen Admin für Ihr Projekt vorhanden sein.\n'

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, status
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from pony.orm import db_session
@@ -5,7 +7,7 @@ from pony.orm import db_session
 from databases.enums import AuthorizationTypes
 import databases.pydantic_models as pm
 from databases.services import find_user_by_email, create_new_team, get_project_from_user_id, \
-    get_all_persons, get_all_project_teams, create_person
+    get_all_persons, get_all_project_teams, create_person, update_all_persons_in_project
 from oauth2_authentication import create_access_token, verify_admin_username, verify_access_token, verify_user_password
 
 router = APIRouter(prefix='/admin', tags=['Admin'])
@@ -88,7 +90,22 @@ def add_new_team(token: pm.Token, team: pm.TeamCreate, person: dict):
     try:
         new_team = create_new_team(team=team, person_id=person['id'])
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                            detail=f'Fehler: {e}')
+        return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                             detail=f'Fehler: {e}')
     return new_team
 
+
+@router.put('/update_all_persons')
+def update_all_persons(token: pm.Token, all_persons: dict[str, pm.PersonShow]):
+    try:
+        token_data = verify_access_token(token.access_token, authorization=AuthorizationTypes.admin)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
+    admin_id: UUID = token_data.id
+
+    try:
+        persons = update_all_persons_in_project(list(all_persons.values()), admin_id=admin_id)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                             detail=f'Fehler: {e}')
+    return persons

@@ -39,6 +39,27 @@ def make_person__actor_of_team(person: pm.Person, team: pm.Team, user_id: UUID):
         return pm.PersonShow.from_orm(person)
 
 
+def update_all_persons_in_project(all_persons: list[pm.PersonShow], admin_id: UUID) -> list[pm.PersonShow]:
+    with db_session:
+        results = []
+        project = Person[admin_id].project
+
+        for person in all_persons:
+            person_in_db = Person.get_for_update(id=person.id)
+            if person.project_of_admin:
+                project.admin = person_in_db
+            for t in person.teams_of_dispatcher:
+                Team[t.id].dispatcher = person_in_db
+            if person.team_of_actor:
+                person_in_db.team_of_actor = Team[person.team_of_actor.id]
+            else:
+                person_in_db.team_of_actor = None
+            results.append(pm.PersonShow.from_orm(person_in_db))
+        return results
+
+
+
+
 def get_project_from_user_id(user_id) -> pm.Project:
     with db_session:
         project = Person[user_id].project
