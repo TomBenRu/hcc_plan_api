@@ -66,7 +66,6 @@ class TeamShow(Team):
 
 
 class AvailablesCreate(BaseModel):
-    planperiod: 'PlanPeriod'
     person: Person
     notes: str
 
@@ -103,8 +102,22 @@ class PlanPeriod(PlanPeriodCreate):
 
 
 class PlanPeriodShow(PlanPeriod):
-    availabless: List[Availables]
+    availabless: List[AvailablesShow]
 
+    def avail_days(self, actor_id: int) -> dict[date, Any]:
+        av_days = {}
+        for available in self.availabless:
+            if available.person.id != actor_id:
+                continue
+            for av_d in available.avail_days:
+                av_days[av_d.day] = av_d.time_of_day.value
+        return av_days
+
+    def notes_of_availables(self, actor_id: int) -> str:
+        for avail in self.availabless:
+            if avail.person.id == actor_id:
+                return avail.notes
+        return ''
     @property
     def all_days(self):
         delta: timedelta = self.end - self.start
@@ -127,7 +140,7 @@ class PlanPeriodShow(PlanPeriod):
 
 
 class PlanPerEtFilledIn(BaseModel):
-    plan_period: PlanPeriod
+    plan_period: PlanPeriodShow
     filled_in: bool
 
 
@@ -141,6 +154,10 @@ class AvailDayCreate(BaseModel):
 
 class AvailDay(AvailDayCreate):
     id: UUID
+    created_at: date
+    last_modified: datetime
+    time_of_day: TimeOfDay
+    availables: Availables
 
 
 class AvailDayShow(AvailDay):

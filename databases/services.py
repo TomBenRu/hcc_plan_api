@@ -142,7 +142,8 @@ def get_open_plan_periods(user_id: UUID) -> list[pm.PlanPerEtFilledIn]:
                 filled_in = False
             else:
                 filled_in = True if list(pp.availabless.select(lambda av: av.person == person).first().avail_days) else False
-            plan_p_et_filled_in.append(pm.PlanPerEtFilledIn(plan_period=pm.PlanPeriod.from_orm(pp),
+
+            plan_p_et_filled_in.append(pm.PlanPerEtFilledIn(plan_period=pm.PlanPeriodShow.from_orm(pp),
                                                             filled_in=filled_in))
     return plan_p_et_filled_in
 
