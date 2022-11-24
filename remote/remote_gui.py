@@ -4,7 +4,7 @@ import time
 import tkinter as tk
 import tkinter.messagebox
 import tkinter.ttk as ttk
-from typing import Literal
+from typing import Literal, Optional
 from uuid import UUID
 
 import requests
@@ -29,7 +29,10 @@ class MainFrame(ttk.Frame):
 
         self.host: str | None = None
 
-        self.access_token: str | None = None
+        self.logins: dict[str, LoginData] = {'superuser': LoginData(name='Superuser', prefix='su'),
+                                             'admin': LoginData(name='Admin', prefix='admin'),
+                                             'dispatcher': LoginData(name='Dispatcher', prefix='dispatcher')}
+
         self.project: pm.Project | None = None
         self.new_project_data: dict | None = None
         self.new_person_data: dict | None = None
@@ -112,7 +115,9 @@ class MainFrame(ttk.Frame):
 
     def get_all_actors(self):
         self.text_log.insert('end', '- get all clowns\n')
-        response = requests.get(f'{self.host}/dispatcher/actors', params={'access_token': self.access_token})
+        if not (access_token := self.logins['dispatcher'].access_token):
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
+        response = requests.get(f'{self.host}/dispatcher/actors', params={'access_token': access_token})
         data = response.json()
         if type(data) == dict and data.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
@@ -134,7 +139,7 @@ class MainFrame(ttk.Frame):
     def login(self):
         self.text_log.insert('end', '- login\n')
 
-        LoginWindow(self, self.host)
+        Login(self)
 
 
 class CommonTopLevel(tk.Toplevel):
@@ -146,6 +151,8 @@ class CommonTopLevel(tk.Toplevel):
 
         self.parent = parent
 
+        self.frame_combo_select = ttk.Frame(self)
+        self.frame_combo_select.pack()
         self.frame_input = ttk.Frame(self, padding='20 20 20 20')
         self.frame_input.pack()
         self.frame_buttons = ttk.Frame(self, padding='20 20 20 20')
@@ -196,6 +203,99 @@ class Settings(tk.Toplevel):
         self.parent.host = self.entry_host.get()
         tk.messagebox.showinfo(parent=self, message='Die Einstellungen wurden vorgenommen.')
         self.destroy()
+
+
+class LoginData(BaseModel):
+    name: str
+    prefix: str
+    access_token: Optional[str]
+
+
+class Login(CommonTopLevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.lift(parent)
+        self.bind('<Return>', lambda event: self.login())
+
+        self.access_data = {}
+
+        self.lb_combo_persons = tk.Label(self.frame_combo_select, text='Person auswählen')
+        self.lb_combo_persons.pack(pady=(0, 5))
+        self.var_combo_persons = tk.StringVar()
+        self.values_combo_persons = self.get_login_persons()
+        self.combo_persons = ttk.Combobox(self.frame_combo_select, values=self.values_combo_persons,
+                                          textvariable=self.var_combo_persons)
+        self.combo_persons.bind("<<ComboboxSelected>>", lambda event: self.autofill())
+        self.combo_persons.pack(pady=(5, 0))
+
+        self.lb_entry_email = tk.Label(self.frame_input, text='Email')
+        self.lb_entry_email.grid(row=0, column=0, padx=(0, 5), pady=(0, 5), sticky='w')
+        self.entry_email = tk.Entry(self.frame_input)
+        self.entry_email.grid(row=0, column=1, padx=(5, 0), pady=(0, 5))
+        self.lb_entry_password = tk.Label(self.frame_input, text='Password')
+        self.lb_entry_password.grid(row=1, column=0, padx=(0, 5), pady=(5, 5), sticky='w')
+        self.entry_password = tk.Entry(self.frame_input, show='*')
+        self.entry_password.grid(row=1, column=1, padx=(5, 0), pady=(5, 5))
+
+        self.var_chk_save_access_data = tk.BooleanVar(value=False)
+        self.chk_save_access_data = tk.Checkbutton(self.frame_input, text='Zugangsdaten speichern?',
+                                                   variable=self.var_chk_save_access_data)
+        self.chk_save_access_data.grid(row=3, column=0, columnspan=2, pady=(5, 0))
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=15, command=self.login)
+        self.bt_ok.grid(row=0, column=0, padx=(0, 5), pady=(0, 0), sticky='e')
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=15, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, padx=(5, 0), pady=(0, 0), sticky='w')
+
+        self.get_login_persons()
+
+    def login(self):  # für das Endanwender-Programm: Allgemeines Login auf Server. Server gibt alle Token und Rechte zurück.
+        email = (self.entry_email.get()).lower()
+        password = self.entry_password.get()
+        rights = []
+        login_data: dict[str, LoginData] = self.parent.logins
+        for k, data in login_data.items():
+            prefix = data.prefix
+            name = data.name
+            response = requests.get(f'{self.parent.host}/{prefix}/login', params={'email': email, 'password': password})
+            if access_token := response.json().get('access_token'):
+                rights.append(name)
+                data.access_token = access_token
+
+        info_text = '\n- '.join(rights)
+        tk.messagebox.showinfo(parent=self, title='Info',
+                               message=f'Eingelogged als:\n'
+                                       f'- {info_text}')
+        if self.var_chk_save_access_data.get():
+            with open('access_data.json', 'w') as f:
+                if not (person := self.var_combo_persons.get()):
+                    tk.messagebox.showerror(parent=self, message='Sie müssen zuerst ihren Namen einttragen.')
+                self.access_data[person] = {}
+                self.access_data[person]['email'] = self.entry_email.get()
+                self.access_data[person]['password'] = self.entry_password.get()
+                json.dump(self.access_data, f)
+        self.destroy()
+
+    def get_login_persons(self):
+        try:
+            with open('access_data.json', 'r') as f:
+                self.access_data = json.load(f)
+        except Exception as e:
+            print(e)
+            return
+        return list(self.access_data)
+
+    def autofill(self):
+        if not self.var_combo_persons.get():
+            return
+        email = self.access_data[self.var_combo_persons.get()]['email']
+        password = self.access_data[self.var_combo_persons.get()]['password']
+        self.entry_email.delete(0, 'end')
+        self.entry_email.insert(0, email)
+        self.entry_password.delete(0, 'end')
+        self.entry_password.insert(0, password)
+
+
 
 
 class LoginWindow(tk.Toplevel):
@@ -309,6 +409,11 @@ class CreateNewProject(CommonTopLevel):
     def __init__(self, parent):
         super().__init__(parent)
 
+        self.access_token = self.parent.logins['superuser'].access_token
+        if not self.access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Superuser-Rechte.')
+            self.destroy()
+
         self.lb_entry_projectname = tk.Label(self.frame_input, text='Projektname:')
         self.lb_entry_projectname.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 10))
         self.entry_projectname = tk.Entry(self.frame_input, width=50)
@@ -344,7 +449,8 @@ class CreateNewProject(CommonTopLevel):
         person = pm.PersonCreate(f_name=self.entry_fname_admin.get(), l_name=self.entry_lname_admin.get(),
                                  email=EmailStr(self.entry_email_admin.get()), password=self.entry_password_admin.get())
         project = pm.ProjectCreate(name=self.entry_projectname.get())
-        token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
+
+        token = pm.Token(access_token=self.access_token, token_type='bearer')
         response = requests.post(f'{self.parent.host}/su/account',
                                  json={'person': person.dict(), 'project': project.dict(),
                                        'access_token': token.dict()})
@@ -355,6 +461,11 @@ class CreateNewProject(CommonTopLevel):
 class CreatePerson(CommonTopLevel):
     def __init__(self, parent):
         super().__init__(parent)
+
+        self.access_token = self.parent.logins['admin'].access_token
+        if not self.access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            self.destroy()
 
         self.lb_fname = tk.Label(self.frame_input, text='Vorname:')
         self.lb_fname.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 5))
@@ -382,7 +493,8 @@ class CreatePerson(CommonTopLevel):
     def new_person(self):
         person = pm.PersonCreate(f_name=self.entry_fname.get(), l_name=self.entry_lname.get(),
                                  email=EmailStr(self.entry_email.get()), password=self.entry_password.get())
-        token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
+
+        token = pm.Token(access_token=self.access_token, token_type='bearer')
         response = requests.post(f'{self.parent.host}/admin/person',
                                  json={'token': token.dict(), 'person': person.dict()})
         self.parent.new_person_data = response.json()
@@ -393,6 +505,11 @@ class AssignPersonToPosition(CommonTopLevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.bind('<Return>', lambda event: self.update_to_db())
+
+        self.access_token = self.parent.logins['admin'].access_token
+        if not self.access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            self.destroy()
 
         self.id_of_old_amin = None
         self.id_of_actual_admin = None
@@ -449,13 +566,13 @@ class AssignPersonToPosition(CommonTopLevel):
         self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
 
     def update_to_db(self):
-        token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
+        token = pm.Token(access_token=self.access_token, token_type='bearer')
         all_persons = {k: json.loads(v.json()) for k, v in self.all_persons_dict_for_combo.items()}
 
         response = requests.put(f'{self.parent.host}/admin/update_all_persons',
                                 json={'token': token.dict(), 'all_persons': all_persons})
         if self.id_of_old_amin != self.id_of_actual_admin:
-            self.parent.access_token = None  # kann man lassen, wenn automatische Rechte vergeben werden!
+            self.parent.logins['admin'].access_token = None
             new_admin = self.all_persons_dict_for_combo[str(self.id_of_actual_admin)]
             tk.messagebox.showwarning(parent=self, title='Admin Login',
                                       message=f'Sie wurden als Admin ausgeloggt. Neuer Admin des Projekts ist:\n'
@@ -546,13 +663,13 @@ class AssignPersonToPosition(CommonTopLevel):
                                 person.teams_of_dispatcher.append(disp_teams[team_id])
 
     def get_persons(self):
-        response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.parent.access_token})
+        response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.access_token})
         all_persons = sorted([pm.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
         return all_persons
 
     def get_teams(self):
         response = requests.get(f'{self.parent.host}/admin/teams',
-                                params={'access_token': self.parent.access_token})
+                                params={'access_token': self.access_token})
         data = response.json()
         if type(data) == dict and data.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
@@ -576,6 +693,11 @@ class GetAvailDays(tk.Toplevel):
 
         self.parent = parent
         self.host = host
+
+        self.access_token = self.parent.logins['dispatcher'].access_token
+        if not self.access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
+            self.destroy()
 
         self.frame_main = ttk.Frame(self, padding='20 20 20 20')
         self.frame_main.pack()
@@ -603,7 +725,7 @@ class GetAvailDays(tk.Toplevel):
                 available_days = {}
                 for actor_id in actor_ids:
                     response = requests.get(f'{self.host}/dispatcher/avail_days',
-                                            params={'access_token': self.parent.access_token, 'actor_id': actor_id})
+                                            params={'access_token': self.access_token, 'actor_id': actor_id})
                     data = response.json()
                     if type(data) == dict and data.get('status_code') == 401:
                         tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
@@ -624,6 +746,11 @@ class CreateTeam(CommonTopLevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.bind('<Return>', lambda event: self.create())
+
+        self.access_token = self.parent.logins['admin'].access_token
+        if not self.access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            self.destroy()
 
         self.lb_name = tk.Label(self.frame_input, text='Name Team:')
         self.lb_name.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 5))
@@ -649,7 +776,7 @@ class CreateTeam(CommonTopLevel):
     def create(self):
         team = pm.TeamCreate(name=self.entry_name.get())
         person_id = self.all_persons[self.var_combo_dispatcher.get()]
-        token = pm.Token(access_token=self.parent.access_token, token_type='bearer')
+        token = pm.Token(access_token=self.access_token, token_type='bearer')
 
         response = requests.post(f'{self.parent.host}/admin/team',
                                  json={'token': token.dict(), 'team': team.dict(), 'person': {'id': str(person_id)}})
@@ -658,7 +785,7 @@ class CreateTeam(CommonTopLevel):
         self.destroy()
 
     def get_persons(self):
-        response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.parent.access_token})
+        response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.access_token})
         all_persons = sorted([pm.Person(**p) for p in response.json()], key=lambda p: p.f_name)
         return all_persons
 
@@ -672,6 +799,11 @@ class CreatePlanperiod(tk.Toplevel):
 
         self.parent = parent
         self.host = host
+
+        self.access_token = self.parent.logins['dispatcher'].access_token
+        if not self.access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
+            self.destroy()
 
         self.date = datetime.datetime.now()
         self.teams: list[pm.TeamShow] | None = None
@@ -723,7 +855,7 @@ class CreatePlanperiod(tk.Toplevel):
 
     def get_teams_and_mindates(self):
         response = requests.get(f'{self.host}/dispatcher/teams',
-                                params={'access_token': self.parent.access_token})
+                                params={'access_token': self.access_token})
         data = response.json()
         if type(data) == dict and data.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
@@ -738,7 +870,7 @@ class CreatePlanperiod(tk.Toplevel):
     def get_last_day_of_existing_planperiods(self):
         team_id = self.values_combo_teams[self.var_combo_teams.get()]
         response = requests.get(f'{self.host}/dispatcher/pp_last_recent_date',
-                                params={'access_token': self.parent.access_token, 'team_id': team_id})
+                                params={'access_token': self.access_token, 'team_id': team_id})
         data = response.json()
         if type(data) == dict and data.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
@@ -759,7 +891,7 @@ class CreatePlanperiod(tk.Toplevel):
         notes = self.text_notes.get(1.0, 'end')
 
         response = requests.post(f'{self.parent.host}/dispatcher/planperiod',
-                                 params={'access_token': self.parent.access_token, 'team_id': team_id,
+                                 params={'access_token': self.access_token, 'team_id': team_id,
                                          'date_start': start.isoformat(), 'date_end': end.isoformat(),
                                          'deadline': deadline, 'notes': notes})
         self.parent.planperiod = response.json()
