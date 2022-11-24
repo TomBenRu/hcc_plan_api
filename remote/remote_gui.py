@@ -573,7 +573,7 @@ class AssignPersonToPosition(CommonTopLevel):
                                 json={'token': token.dict(), 'all_persons': all_persons})
         if self.id_of_old_amin != self.id_of_actual_admin:
             self.parent.logins['admin'].access_token = None
-            new_admin = self.all_persons_dict_for_combo[str(self.id_of_actual_admin)]
+            new_admin = [p for p in self.all_persons if p.id == self.id_of_actual_admin][0]
             tk.messagebox.showwarning(parent=self, title='Admin Login',
                                       message=f'Sie wurden als Admin ausgeloggt. Neuer Admin des Projekts ist:\n'
                                               f'"{new_admin.f_name} {new_admin.l_name}."')
