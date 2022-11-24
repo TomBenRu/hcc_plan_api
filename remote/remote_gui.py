@@ -249,7 +249,7 @@ class Login(CommonTopLevel):
 
         self.get_login_persons()
 
-    def login(self):  # für das Endanwender-Programm: Allgemeines Login auf Server. Server gibt alle Token und Rechte zurück.
+    def login(self):  # für das Endanwender-Programm: Logik und allgemeines Login auf Server. Server gibt alle Token und Rechte zurück.
         email = (self.entry_email.get()).lower()
         password = self.entry_password.get()
         rights = []
@@ -294,115 +294,6 @@ class Login(CommonTopLevel):
         self.entry_email.insert(0, email)
         self.entry_password.delete(0, 'end')
         self.entry_password.insert(0, password)
-
-
-
-
-class LoginWindow(tk.Toplevel):
-    def __init__(self, parent, host):
-        super().__init__(parent)
-        self.grab_set()
-        self.lift(parent)
-        self.focus_set()
-        self.bind('<Escape>', lambda event: self.destroy())
-        self.bind('<Return>', lambda event: self.save_token())
-
-        self.parent = parent
-        self.host = host
-        self.access_data: dict[str, dict[str, str]] | None = None
-
-        self.frame_manager = ttk.Frame(self, padding='20 20 20 05')
-        self.frame_manager.pack()
-
-        self.frame_mail_psw = ttk.Frame(self, padding='20 05 20 05')
-        self.frame_mail_psw.pack()
-
-        self.frame_buttons = ttk.Frame(self, padding='20 05 20 20')
-        self.frame_buttons.pack()
-
-        self.var_combo_manager = tk.StringVar(value='Dispatcher')
-        self.lb_combo_manager = tk.Label(self.frame_manager, text='Einloggen als...')
-        self.lb_combo_manager.grid(row=0, column=0, padx=(0, 5), sticky='e')
-        self.combo_manager = ttk.Combobox(self.frame_manager, values=['Supervisor', 'Admin', 'Dispatcher'],
-                                          textvariable=self.var_combo_manager, state='readonly')
-        self.combo_manager.bind("<<ComboboxSelected>>", lambda event: self.autofill())
-        self.combo_manager.grid(row=0, column=1, padx=(5, 0), sticky='w')
-
-        self.lb_entry_email = tk.Label(self.frame_mail_psw, text='Email')
-        self.lb_entry_email.grid(row=0, column=0, padx=(0, 5), pady=(0, 5), sticky='w')
-        self.entry_email = tk.Entry(self.frame_mail_psw)
-        self.entry_email.grid(row=0, column=1, padx=(5, 0), pady=(0, 5))
-        self.lb_entry_password = tk.Label(self.frame_mail_psw, text='Password')
-        self.lb_entry_password.grid(row=1, column=0, padx=(0, 5), pady=(5, 5), sticky='w')
-        self.entry_password = tk.Entry(self.frame_mail_psw, show='*')
-        self.entry_password.grid(row=1, column=1, padx=(5, 0), pady=(5, 5))
-
-        self.var_chk_save_access_data = tk.BooleanVar(value=False)
-        self.chk_save_access_data = tk.Checkbutton(self.frame_mail_psw, text='Zugangsdaten speichern?',
-                                                   variable=self.var_chk_save_access_data)
-        self.chk_save_access_data.grid(row=3, column=0, columnspan=2, pady=(5, 0))
-
-        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=15, command=self.save_token)
-        self.bt_ok.grid(row=0, column=0, padx=(0, 5), pady=(0, 0), sticky='e')
-        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=15, command=self.destroy)
-        self.bt_cancel.grid(row=0, column=1, padx=(5, 0), pady=(0, 0), sticky='w')
-
-        self.autofill()
-
-    def autofill(self):
-        try:
-            with open('access_data.json', 'r') as f:
-                self.access_data = json.load(f)
-        except Exception as e:
-            print(e)
-            self.entry_email.delete(0, 'end')
-            self.entry_password.delete(0, 'end')
-            return
-        if not self.access_data.get(self.var_combo_manager.get()):
-            self.entry_email.delete(0, 'end')
-            self.entry_password.delete(0, 'end')
-            return
-        self.entry_email.delete(0, 'end')
-        self.entry_email.insert(0, self.access_data[self.var_combo_manager.get()]['email'])
-        self.entry_password.delete(0, 'end')
-        self.entry_password.insert(0, self.access_data[self.var_combo_manager.get()]['password'])
-
-    def save_token(self):
-        connection_error = None
-        t0 = time.time()
-        email = (self.entry_email.get()).lower()
-        password = self.entry_password.get()
-        while time.time() - t0 < 30:
-            try:
-                manager = self.var_combo_manager.get()
-                prefix = 'su' if manager == 'Supervisor' else 'admin' if manager == 'Admin' else 'dispatcher' if manager == 'Dispatcher' else None
-                response = requests.get(f'{self.host}/{prefix}/login',
-                                        params={'email': email, 'password': password})
-
-                self.parent.access_token = response.json()['access_token']
-                if self.var_chk_save_access_data.get():
-                    with open('access_data.json', 'w') as f:
-                        if not self.access_data:
-                            self.access_data = {}
-                        if not self.access_data.get(self.var_combo_manager.get()):
-                            self.access_data[self.var_combo_manager.get()] = {}
-                        self.access_data[self.var_combo_manager.get()]['email'] = self.entry_email.get()
-                        self.access_data[self.var_combo_manager.get()]['password'] = self.entry_password.get()
-                        json.dump(self.access_data, f)
-                if manager in ('Admin', 'Dispatcher'):
-                    self.get_project(prefix)
-                self.destroy()
-                tk.messagebox.showinfo(parent=self.parent, message='Sie sind erfolgreich eingeloggt.')
-                return
-            except ConnectionError as e:
-                connection_error = e
-                time.sleep(0.2)
-        raise connection_error
-
-    def get_project(self, prefix: str):
-        response = requests.get(f'{self.host}/{prefix}/project',
-                                params={'access_token': self.parent.access_token})
-        self.parent.project = pm.Project(**response.json())
 
 
 class CreateNewProject(CommonTopLevel):
@@ -955,7 +846,3 @@ if __name__ == '__main__':
     mainframe.pack()
     root.menubar = MainMenu(parent=mainframe, root=root)
     root.mainloop()
-
-"""
-'person': {'f_name': 'Pia', 'l_name': 'Pacher', 'email': 'pia.pacher@funmail.com', 'password': 'ujEOf4YDVj0'}
-"""
