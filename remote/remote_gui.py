@@ -555,8 +555,11 @@ class AssignPersonToPosition(CommonTopLevel):
 
     def get_persons(self):
         response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.access_token})
-        all_persons = sorted([pm.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
-        return all_persons
+        try:
+            all_persons = sorted([pm.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
+            return all_persons
+        except Exception as e:
+            return response.json(), e
 
     def get_teams(self):
         response = requests.get(f'{self.parent.host}/admin/teams',

@@ -36,7 +36,17 @@ class Person(db_actors.Entity):
     team_of_actor = Optional('Team', reverse='actors')
     availabless = Set('Availables')
 
-    # composite_key(f_name, l_name, project)
+    composite_key(f_name, l_name, project)
+
+    def before_update(self):
+        """Wenn sich der Wert von team_of_actor geändert hat, werden die aktuellen availables-Eiträge
+        der Person gelöscht. die verbundenen avail_day-Einträge werden dann automatisch gelöscht."""
+        old_val = self._dbvals_.get(Person.team_of_actor)
+        new_val = self.team_of_actor
+        if new_val != old_val:
+            for availables in self.availabless:
+                if not availables.plan_period.closed:
+                    availables.delete()
 
 
 class Team(db_actors.Entity):
