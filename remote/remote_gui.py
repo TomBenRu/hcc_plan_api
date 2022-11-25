@@ -103,6 +103,19 @@ class MainFrame(ttk.Frame):
         self.wait_window(create_planperiod)
         self.text_log.insert('end', f'-- {self.planperiod}\n')
 
+    def change_planperiod(self):
+        self.text_log.insert('end', '- change planperiod\n')
+        change_planperiod = ChangePlanPeriod(self)
+        self.wait_window(change_planperiod)
+        self.text_log.insert('end', f'-- {self.planperiod}\n')
+
+    def change_project_name(self):
+        self.text_log.insert('end', '- new planperiod\n')
+        if not self.logins['admin'].access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            return
+        ChangeProjectName(self)
+
     def get_all_actors(self):
         self.text_log.insert('end', '- get all clowns\n')
         if not (access_token := self.logins['dispatcher'].access_token):
@@ -339,6 +352,46 @@ class CreateNewProject(CommonTopLevel):
         self.destroy()
 
 
+class ChangeProjectName(CommonTopLevel):
+    def __init__(self, parent):
+        super().__init__(parent=parent)
+        self.bind('<Return>', lambda event: self.change())
+
+        self.access_token = self.parent.logins['admin'].access_token
+        self.old_name = None
+
+        self.lb_name = tk.Label(self.frame_input, text='Projektname:')
+        self.lb_name.pack()
+        self.entry_name = tk.Entry(self.frame_input, width=40)
+        self.entry_name.pack()
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=20, command=self.change)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 5))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=20, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
+
+        self.autofill()
+
+    def change(self):
+        new_name = self.entry_name.get()
+        if new_name == self.old_name:
+            self.destroy()
+            tk.messagebox.showinfo(parent=self.parent, message='Der Projektname wurde nicht verändert.')
+            return
+
+        response = requests.put(f'{self.parent.host}/admin/project',
+                                params={'access_token': self.access_token, 'new_name': self.entry_name.get()})
+        self.destroy()
+        tk.messagebox.showinfo(parent=self.parent,
+                               message=f'Der Projektname wurde von "{self.old_name}" zu "{new_name} geändert."')
+
+    def autofill(self):
+        response = requests.get(f'{self.parent.host}/admin/project', params={'access_token': self.access_token})
+        self.old_name = response.json()['name']
+        self.entry_name.insert(0, self.old_name)
+
+
+
 class CreatePerson(CommonTopLevel):
     def __init__(self, parent):
         super().__init__(parent)
@@ -572,6 +625,63 @@ class AssignPersonToPosition(CommonTopLevel):
             return {f'{p.f_name} {p.l_name}': p for p in self.all_persons}
         if combo_type == 'team':
             return {str(t.id): t for t in self.all_teams}
+
+
+class ChangePlanPeriod(CommonTopLevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.bind('<Return>', lambda event: self.change())
+
+        self.access_token = self.parent.logins['dispatcher'].access_token
+
+        self.frame_combo_select.config(padding='20 20 20 20')
+
+        self.var_combo_planperiods = tk.StringVar()
+        self.var_combo_teams = tk.StringVar()
+        self.values_combo_teams = {t.name: str(t.id) for t in self.get_teams()}
+        self.values_combo_planperiods = {}
+
+        self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Team')
+        self.lb_combo_teams.grid(row=0, column=0, sticky='w')
+        self.combo_teams = ttk.Combobox(self.frame_combo_select, values=list(self.values_combo_teams),
+                                        textvariable=self.var_combo_teams)
+        self.combo_teams.bind('<<ComboboxSelected>>', lambda event: self.autofill('team'))
+        self.combo_teams.grid(row=1, column=0, padx=(0, 5))
+
+        self.lb_combo_planperiods = tk.Label(self.frame_combo_select, text='Planperiode:')
+        self.lb_combo_planperiods.grid(row=0, column=1, sticky='w')
+        self.combo_planperiods = ttk.Combobox(self.frame_combo_select, values=[],
+                                              textvariable=self.var_combo_planperiods)
+        self.combo_planperiods.bind('<<ComboboxSelected>>', lambda event: self.autofill('planperiod'))
+        self.combo_planperiods.grid(row=1, column=1, padx=(5, 0))
+
+        self.get_teams()
+
+    def change(self):
+        pass
+
+    def autofill(self, box: Literal['team', 'planperiod']):
+        if box == 'team':
+            self.var_combo_planperiods.set('')
+            team_id = self.values_combo_teams[self.var_combo_teams.get()]
+            response = requests.get(f'{self.parent.host}/dispatcher/planperiods',
+                                    params={'access_token': self.access_token, 'team_id': team_id})
+            planperiods = sorted([pm.PlanPeriod(**pp) for pp in response.json()], key=lambda v: v.start)
+            self.values_combo_planperiods = {f'{pp.start.strftime("%d.%m.%y")}-{pp.end.strftime("%d.%m.%y")}': pp
+                                             for pp in planperiods}
+            print(self.values_combo_planperiods)
+            self.combo_planperiods.config(values=list(self.values_combo_planperiods))
+        if box == 'planperiod':
+            pass
+
+    def get_planperiods(self):
+        pass
+
+    def get_teams(self):
+        response = requests.get(f'{self.parent.host}/dispatcher/teams',
+                                params={'access_token': self.access_token})
+        return [pm.Team(**t) for t in response.json()]
+
 
 
 class GetAvailDays(tk.Toplevel):
@@ -815,8 +925,10 @@ class MainMenu(tk.Menu):
         self.admin.add_command(label='Neues Team', command=parent.new_team)
         self.admin.add_command(label='Neue/r Mitarbeiter:in', command=parent.new_person)
         self.admin.add_command(label='Mitarbeiter:in einer Position zuweisen', command=parent.assign_person_to_position)
+        self.admin.add_command(label='Projektname ändern', command=parent.change_project_name)
 
         self.dispatcher.add_command(label='Neue Planperiode', command=parent.new_planperiod)
+        self.dispatcher.add_command(label='Planperiode ändern', command=parent.change_planperiod)
         self.dispatcher.add_command(label='Alle Clowns', command=parent.get_all_actors)
         self.dispatcher.add_command(label='Spieloptionen...', command=parent.get_avail_days)
 

@@ -7,7 +7,7 @@ from pony.orm import db_session
 from databases.enums import AuthorizationTypes
 import databases.pydantic_models as pm
 from databases.services import find_user_by_email, create_new_team, get_project_from_user_id, \
-    get_all_persons, get_all_project_teams, create_person, update_all_persons_in_project
+    get_all_persons, get_all_project_teams, create_person, update_all_persons_in_project, update_project_name
 from oauth2_authentication import create_access_token, verify_admin_username, verify_access_token, verify_user_password
 
 router = APIRouter(prefix='/admin', tags=['Admin'])
@@ -64,6 +64,21 @@ def get_project(access_token: str):
 
     project = get_project_from_user_id(user_id)
     return project
+
+
+@router.put('/project')
+def update_projekt_name(access_token: str, new_name: str):
+    try:
+        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
+    user_id = token_data.id
+
+    try:
+        updated_project = update_project_name(user_id=user_id, project_name=new_name)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Error: {e}')
+    return updated_project
 
 
 @router.post('/person')

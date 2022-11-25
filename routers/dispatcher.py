@@ -8,7 +8,7 @@ import databases.pydantic_models as pm
 from databases.services import (create_new_plan_period,
                                 change_status_planperiod, get_actors_in_dispatcher_teams, get_avail_days_from_actor,
                                 get_planperiods_last_recent_date, get_project_from_user_id,
-                                make_person__actor_of_team, get_teams_of_dispatcher)
+                                make_person__actor_of_team, get_teams_of_dispatcher, get_planperiods_of_team)
 from oauth2_authentication import (verify_supervisor_username, verify_supervisor_password, create_access_token,
                                    verify_access_token, verify_su_access_token,
                                    get_current_dispatcher, verify_dispatcher_username, verify_user_password)
@@ -98,8 +98,25 @@ def get_teams(access_token: str):
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials: {e}')
     user_id = token_data.id
-    teams = get_teams_of_dispatcher(user_id)
+    try:
+        teams = get_teams_of_dispatcher(user_id)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler: {e}')
     return teams
+
+
+@router.get('/planperiods')
+def get_planperiods(access_token: str, team_id: str):
+    try:
+        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials: {e}')
+    user_id = token_data.id
+    try:
+        planperiods = get_planperiods_of_team(team_id=UUID(team_id))
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler: {e}')
+    return planperiods
 
 
 @router.get('/actors')

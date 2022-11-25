@@ -58,11 +58,16 @@ def update_all_persons_in_project(all_persons: list[pm.PersonShow], admin_id: UU
         return results
 
 
-
-
 def get_project_from_user_id(user_id) -> pm.Project:
     with db_session:
         project = Person[user_id].project
+        return pm.Project.from_orm(project)
+
+
+def update_project_name(user_id: UUID, project_name: str):
+    with db_session:
+        project = Person[user_id].project_of_admin
+        project.name = project_name
         return pm.Project.from_orm(project)
 
 
@@ -161,6 +166,12 @@ def get_planperiods_last_recent_date(team_id: str) -> datetime.date:
         else:
             date = datetime.date(1980, 1, 1)
         return date
+
+
+def get_planperiods_of_team(team_id: UUID) -> list[pm.PlanPeriod]:
+    with db_session:
+        planperiods = Team[team_id].plan_periods
+        return [pm.PlanPeriod.from_orm(pp) for pp in planperiods]
 
 
 def get_user_by_id(user_id: UUID) -> pm.Person:
