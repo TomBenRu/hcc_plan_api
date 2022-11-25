@@ -678,6 +678,11 @@ class ChangePlanPeriod(CommonTopLevel):
         self.text_notes = tk.Text(self.frame_input, width=50, height=5)
         self.text_notes.grid(row=4, column=0, columnspan=3, sticky='ew')
 
+        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=20, command=self.change)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 5))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=20, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
+
         self.get_teams()
 
     def change(self):
@@ -687,8 +692,18 @@ class ChangePlanPeriod(CommonTopLevel):
         planperiod.deadline = self.deadline.get_date()
         planperiod.closed = self.var_chk_closed.get()
         planperiod.notes = self.text_notes.get(1.0, 'end')
+        planperiod = json.loads(planperiod.json())
+        token = pm.Token(access_token=self.access_token, token_type='bearer')
 
-        response = requests.put()
+        response = requests.put(f'{self.parent.host}/dispatcher/planperiod',
+                                json={'token': token.dict(), 'planperiod': planperiod})
+        try:
+            new_planperiod = pm.PlanPeriod.parse_obj(response.json())
+            self.destroy()
+            tk.messagebox.showinfo(parent=self.parent, message='Update war erfolgreich.')
+        except Exception as e:
+            self.destroy()
+            tk.messagebox.showerror(parent=self.parent, message=f'Ein fehler trat auf:\n{response.json()}\n{e}')
 
     def autofill(self, box: Literal['team', 'planperiod']):
         if box == 'team':

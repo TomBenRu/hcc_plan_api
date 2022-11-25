@@ -174,6 +174,16 @@ def get_planperiods_of_team(team_id: UUID) -> list[pm.PlanPeriod]:
         return [pm.PlanPeriod.from_orm(pp) for pp in planperiods]
 
 
+def update_1_planperiod(planperiod: pm.PlanPeriod) -> pm.PlanPeriod:
+    with db_session:
+        planperiod_db = PlanPeriod[planperiod.id]
+
+        planperiod_db.set(start=planperiod.start, end=planperiod.end, deadline=planperiod.deadline,
+                          closed=planperiod.closed, notes=planperiod.notes)
+
+        return pm.PlanPeriod.from_orm(planperiod_db)
+
+
 def get_user_by_id(user_id: UUID) -> pm.Person:
     with db_session:
         person = Person[user_id]

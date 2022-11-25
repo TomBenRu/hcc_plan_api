@@ -41,6 +41,7 @@ class Person(db_actors.Entity):
     def before_update(self):
         """Wenn sich der Wert von team_of_actor geändert hat, werden die aktuellen availables-Eiträge
         der Person gelöscht. die verbundenen avail_day-Einträge werden dann automatisch gelöscht."""
+        self.last_modified = datetime.utcnow()
         old_val = self._dbvals_.get(Person.team_of_actor)
         new_val = self.team_of_actor
         if new_val != old_val:
@@ -91,6 +92,22 @@ class PlanPeriod(db_actors.Entity):
     @property
     def dispatcher(self):
         return self.team.dispatcher
+
+    @property
+    def avail_days(self):
+        return self.availabless.avail_days
+
+    def before_update(self):
+        """Wenn sich der Planungszeitraum verändert hat,
+        werden avail_days, die nicht mehr in diesem Zeitraum liegen, gelöscht."""
+        self.last_modified = datetime.utcnow()
+        old_start = self._dbvals_.get(PlanPeriod.start)
+        old_end = self._dbvals_.get(PlanPeriod.end)
+        if self.start > old_start or self.end < old_end:
+            for avail_day in self.avail_days:
+                if avail_day.day < self.start or avail_day.day > self.end:
+                    avail_day.delete()
+
 
 
 class AvailDay(db_actors.Entity):
