@@ -85,13 +85,6 @@ class MainFrame(ttk.Frame):
         self.wait_window(create_person)
         self.text_log.insert('end', f'-- {self.new_person_data}\n')
 
-
-    def new_admin(self):
-        self.text_log.insert('end', '- new admin\n')
-
-    def new_dispatcher(self):
-        self.text_log.insert('end', '- new dispatcher\n')
-
     def new_team(self):
         self.text_log.insert('end', '- new team\n')
         create_team = CreateTeam(self)
@@ -103,9 +96,6 @@ class MainFrame(ttk.Frame):
         assign_person = AssignPersonToPosition(self)
         self.wait_window(assign_person)
         self.text_log.insert('end', f'-- {self.new_jobs}\n')
-
-    def new_actor(self):
-        self.text_log.insert('end', '- new actor\n')
 
     def new_planperiod(self):
         self.text_log.insert('end', '- new planperiod\n')
@@ -439,16 +429,16 @@ class AssignPersonToPosition(CommonTopLevel):
             tk.Label(self.frame_checks,
                      text=f'Team {team.name}').grid(row=i, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
             tk.Radiobutton(self.frame_checks, variable=self.var_radio_teams_actor, value=id_team,
-                           command=lambda: self.new_selection_team(profession='actor')).grid(row=i, column=1, padx=5, pady=5)
+                           command=lambda id_t=id_team: self.new_selection_team(profession='actor', id_team=id_t)).grid(row=i, column=1, padx=5, pady=5)
             self.vars_all_checks_team[id_team] = tk.BooleanVar()
             self.all_checks_team[id_team] = tk.Checkbutton(self.frame_checks,
                                                            variable=self.vars_all_checks_team[id_team],
-                                                           command=lambda: self.new_selection_team('dispatcher'))
+                                                           command=lambda id_t=id_team: self.new_selection_team('dispatcher', id_t))
             self.all_checks_team[id_team].grid(row=i, column=2, padx=(5, 0), pady=5)
         tk.Label(self.frame_checks, text=f'Keinem Team zugeordnet').grid(row=len(self.all_teams)+2, column=0,
                                                                          sticky='e', padx=(0, 5), pady=(5, 0))
         tk.Radiobutton(self.frame_checks, variable=self.var_radio_teams_actor, value='kein Team',
-                       command=lambda: self.new_selection_team(profession='actor')).grid(row=len(self.all_teams)+2,
+                       command=lambda: self.new_selection_team(profession='actor', id_team='-1')).grid(row=len(self.all_teams)+2,
                                                                                          column=1, padx=5, pady=(5, 0))
 
         self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=15, command=self.update_to_db)
@@ -521,7 +511,7 @@ class AssignPersonToPosition(CommonTopLevel):
             self.var_chk_admin.set(True)
             return
 
-    def new_selection_team(self, profession: Literal['actor', 'dispatcher']):
+    def new_selection_team(self, profession: Literal['actor', 'dispatcher'], id_team):
         person_fullname = self.var_combo_persons.get()
 
         if person_fullname:
@@ -539,19 +529,25 @@ class AssignPersonToPosition(CommonTopLevel):
             if not person_fullname:
                 for var in self.vars_all_checks_team.values():
                     var.set(False)
-            for team_id, var_chk_bt in self.vars_all_checks_team.items():
-                if var_chk_bt.get():
-                    for p in self.all_persons_dict_for_combo.values():
-                        if p == person:
-                            continue
-                        if team_id in (disp_teams := {str(t.id): t for t in p.teams_of_dispatcher}):
-                            if tk.messagebox.askyesno(parent=self,
-                                              message=f'Der/die Planer:in des Teams "{disp_teams[team_id].name}" '
+                return
+            if not self.vars_all_checks_team[id_team].get():
+                tk.messagebox.showerror(parent=self,
+                                        message='Um für dieses Team den Dispatcher zu wechseln, wählen Sie die '
+                                                'entsprechende Person und weisen dem Team diese als Dispatcher zu')
+                self.vars_all_checks_team[id_team].set(True)
+            for p in self.all_persons_dict_for_combo.values():
+                if p == person:
+                    continue
+                if id_team in (disp_teams := {str(t.id): t for t in p.teams_of_dispatcher}):
+                    if tk.messagebox.askyesno(parent=self,
+                                              message=f'Der/die Planer:in des Teams "{disp_teams[id_team].name}" '
                                                       f'ist zurzeit "{p.f_name} {p.l_name}".\n'
                                                       f'Soll diese Position mit "{person.f_name} {person.l_name}" '
                                                       f'neu besetzt werden?'):
-                                p.teams_of_dispatcher.remove(disp_teams[team_id])
-                                person.teams_of_dispatcher.append(disp_teams[team_id])
+                        p.teams_of_dispatcher.remove(disp_teams[id_team])
+                        person.teams_of_dispatcher.append(disp_teams[id_team])
+                    else:
+                        self.vars_all_checks_team[id_team].set(False)
 
     def get_persons(self):
         response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.access_token})
@@ -800,9 +796,6 @@ class MainMenu(tk.Menu):
         self.file = tk.Menu(self, tearoff=0)
         self.add_cascade(label='Datei', underline=0, menu=self.file)
 
-        self.export = tk.Menu(self, tearoff=0)
-        self.add_cascade(label='Export', underline=0, menu=self.export)
-
         self.supervisor = tk.Menu(self, tearoff=0)
         self.add_cascade(label='Supervisor', underline=0, menu=self.supervisor)
 
@@ -811,15 +804,6 @@ class MainMenu(tk.Menu):
 
         self.dispatcher = tk.Menu(self, tearoff=0)
         self.add_cascade(label='Dispatcher', underline=0, menu=self.dispatcher)
-
-        self.fetch_data = tk.Menu(self, tearoff=0)
-        self.add_cascade(label='Import', underline=0, menu=self.fetch_data)
-
-        self.new_data = tk.Menu(self, tearoff=0)
-        self.add_cascade(label='Neue Einträge', underline=0, menu=self.new_data)
-
-        self.edit_data = tk.Menu(self, tearoff=0)
-        self.add_cascade(label='Einträge verändern')
 
         self.login = tk.Menu(self, tearoff=0)
         self.add_cascade(label='login', underline=0, command=parent.login)
@@ -830,15 +814,11 @@ class MainMenu(tk.Menu):
 
         self.admin.add_command(label='Neues Team', command=parent.new_team)
         self.admin.add_command(label='Neue/r Mitarbeiter:in', command=parent.new_person)
-        self.admin.add_command(label='Neue/r Planer:in', command=parent.new_dispatcher)
         self.admin.add_command(label='Mitarbeiter:in einer Position zuweisen', command=parent.assign_person_to_position)
 
-        self.new_data.add_command(label='Neue/r Admin', command=parent.new_admin)
-        self.new_data.add_command(label='Neue/r Clown', command=parent.new_actor)
-        self.new_data.add_command(label='Neue Planperiode', command=parent.new_planperiod)
-
-        self.fetch_data.add_command(label='Alle Clowns', command=parent.get_all_actors)
-        self.fetch_data.add_command(label='Spieloptionen...', command=parent.get_avail_days)
+        self.dispatcher.add_command(label='Neue Planperiode', command=parent.new_planperiod)
+        self.dispatcher.add_command(label='Alle Clowns', command=parent.get_all_actors)
+        self.dispatcher.add_command(label='Spieloptionen...', command=parent.get_avail_days)
 
 
 if __name__ == '__main__':
