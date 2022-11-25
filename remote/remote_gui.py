@@ -636,46 +636,97 @@ class ChangePlanPeriod(CommonTopLevel):
 
         self.frame_combo_select.config(padding='20 20 20 20')
 
+        self.var_chk_closed = tk.BooleanVar()
         self.var_combo_planperiods = tk.StringVar()
         self.var_combo_teams = tk.StringVar()
         self.values_combo_teams = {t.name: str(t.id) for t in self.get_teams()}
-        self.values_combo_planperiods = {}
+        self.values_combo_planperiods: dict[str, pm.PlanPeriod] = {}
 
         self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Team')
         self.lb_combo_teams.grid(row=0, column=0, sticky='w')
         self.combo_teams = ttk.Combobox(self.frame_combo_select, values=list(self.values_combo_teams),
-                                        textvariable=self.var_combo_teams)
+                                        textvariable=self.var_combo_teams, state='readonly')
         self.combo_teams.bind('<<ComboboxSelected>>', lambda event: self.autofill('team'))
         self.combo_teams.grid(row=1, column=0, padx=(0, 5))
 
         self.lb_combo_planperiods = tk.Label(self.frame_combo_select, text='Planperiode:')
-        self.lb_combo_planperiods.grid(row=0, column=1, sticky='w')
+        self.lb_combo_planperiods.grid(row=0, column=1, sticky='w', padx=(5, 0))
         self.combo_planperiods = ttk.Combobox(self.frame_combo_select, values=[],
-                                              textvariable=self.var_combo_planperiods)
+                                              textvariable=self.var_combo_planperiods, state='readonly')
         self.combo_planperiods.bind('<<ComboboxSelected>>', lambda event: self.autofill('planperiod'))
         self.combo_planperiods.grid(row=1, column=1, padx=(5, 0))
+
+        self.chk_closed = tk.Checkbutton(self.frame_input, text='Eingabe von Spieloptionen nicht mehr möglich.',
+                                         variable=self.var_chk_closed)
+        self.chk_closed.grid(row=0, column=0, columnspan=3, pady=(0,10))
+
+        self.lb_start = tk.Label(self.frame_input, text='Anfang:')
+        self.lb_start.grid(row=1, column=0, sticky='w', padx=(5, 5))
+        self.lb_end = tk.Label(self.frame_input, text='Ende:')
+        self.lb_end.grid(row=1, column=1, sticky='w', padx=(5, 5))
+        self.lb_deadline = tk.Label(self.frame_input, text='Deadline:')
+        self.lb_deadline.grid(row=1, column=2, sticky='w', padx=(5, 5))
+        self.start = tkcalendar.DateEntry(self.frame_input, locale='de_De', width=20, date_pattern='dd.mm.yyyy')
+        self.start.grid(row=2, column=0, sticky='w', padx=(5, 5))
+        self.end = tkcalendar.DateEntry(self.frame_input, locale='de_De', width=20, date_pattern='dd.mm.yyyy')
+        self.end.grid(row=2, column=1, sticky='w', padx=(5, 5))
+        self.deadline = tkcalendar.DateEntry(self.frame_input, locale='de_De', width=20, date_pattern='dd.mm.yyyy')
+        self.deadline.grid(row=2, column=2, sticky='w', padx=(5, 5))
+
+        self.lb_notes = tk.Label(self.frame_input, text='Notizen:')
+        self.lb_notes.grid(row=3, column=0, columnspan=3, sticky='w', pady=(10, 0))
+        self.text_notes = tk.Text(self.frame_input, width=50, height=5)
+        self.text_notes.grid(row=4, column=0, columnspan=3, sticky='ew')
 
         self.get_teams()
 
     def change(self):
-        pass
+        planperiod: pm.PlanPeriod = self.values_combo_planperiods[self.var_combo_planperiods.get()]
+        planperiod.start = self.start.get_date()
+        planperiod.end = self.end.get_date()
+        planperiod.deadline = self.deadline.get_date()
+        planperiod.closed = self.var_chk_closed.get()
+        planperiod.notes = self.text_notes.get(1.0, 'end')
+
+        response = requests.put()
 
     def autofill(self, box: Literal['team', 'planperiod']):
         if box == 'team':
             self.var_combo_planperiods.set('')
-            team_id = self.values_combo_teams[self.var_combo_teams.get()]
-            response = requests.get(f'{self.parent.host}/dispatcher/planperiods',
-                                    params={'access_token': self.access_token, 'team_id': team_id})
-            planperiods = sorted([pm.PlanPeriod(**pp) for pp in response.json()], key=lambda v: v.start)
-            self.values_combo_planperiods = {f'{pp.start.strftime("%d.%m.%y")}-{pp.end.strftime("%d.%m.%y")}': pp
+            planperiods = self.get_planperiods()
+            self.values_combo_planperiods = {f'{pp.start.strftime("%d.%m.%y")} - {pp.end.strftime("%d.%m.%y")}': pp
                                              for pp in planperiods}
-            print(self.values_combo_planperiods)
             self.combo_planperiods.config(values=list(self.values_combo_planperiods))
         if box == 'planperiod':
-            pass
+            start = self.values_combo_planperiods[self.var_combo_planperiods.get()].start
+            end = self.values_combo_planperiods[self.var_combo_planperiods.get()].end
+            deadline = self.values_combo_planperiods[self.var_combo_planperiods.get()].deadline
+            closed = self.values_combo_planperiods[self.var_combo_planperiods.get()].closed
+            notes = self.values_combo_planperiods[self.var_combo_planperiods.get()].notes
+            keys_values_planperiods = list(self.values_combo_planperiods)
+            if (curr_index := keys_values_planperiods.index(self.var_combo_planperiods.get())) > 0:
+                maxdate = self.values_combo_planperiods[keys_values_planperiods[curr_index-1]].start - datetime.timedelta(days=1)
+            else:
+                maxdate = None
+            if curr_index < len(keys_values_planperiods) - 1:
+                mindate = self.values_combo_planperiods[keys_values_planperiods[curr_index+1]].end + datetime.timedelta(days=1)
+            else:
+                mindate = None
+            self.start.config(mindate=mindate, maxdate=maxdate)
+            self.end.config(mindate=mindate, maxdate=maxdate)
+            self.start.set_date(start)
+            self.end.set_date(end)
+            self.deadline.set_date(deadline)
+            self.var_chk_closed.set(closed)
+            self.text_notes.delete(1.0, 'end')
+            self.text_notes.insert(1.0, notes)
 
     def get_planperiods(self):
-        pass
+        team_id = self.values_combo_teams[self.var_combo_teams.get()]
+        response = requests.get(f'{self.parent.host}/dispatcher/planperiods',
+                                params={'access_token': self.access_token, 'team_id': team_id})
+        planperiods = sorted([pm.PlanPeriod(**pp) for pp in response.json()], key=lambda v: v.start, reverse=True)
+        return planperiods
 
     def get_teams(self):
         response = requests.get(f'{self.parent.host}/dispatcher/teams',
