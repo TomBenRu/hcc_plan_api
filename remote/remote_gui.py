@@ -77,13 +77,21 @@ class MainFrame(ttk.Frame):
 
     def new_project(self):
         self.text_log.insert('end', '- new Project\n')
-        create_new_project = CreateNewProject(self)
+        access_token = self.logins['superuser'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Superuser-Rechte.')
+            return
+        create_new_project = CreateNewProject(self, access_token)
         self.wait_window(create_new_project)
         self.text_log.insert('end', f'-- {self.new_project_data}')
 
     def new_person(self):
         self.text_log.insert('end', '- new person\n')
-        create_person = CreatePerson(self)
+        access_token = self.logins['admin'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            return
+        create_person = CreatePerson(self, access_token)
         self.wait_window(create_person)
         self.text_log.insert('end', f'-- {self.new_person_data}\n')
 
@@ -99,7 +107,11 @@ class MainFrame(ttk.Frame):
 
     def assign_person_to_position(self):
         self.text_log.insert('end', '- new jobs for persons\n')
-        assign_person = AssignPersonToPosition(self)
+        access_token = self.logins['admin'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            return
+        assign_person = AssignPersonToPosition(self, access_token)
         self.wait_window(assign_person)
         self.text_log.insert('end', f'-- {self.new_jobs}\n')
 
@@ -115,7 +127,11 @@ class MainFrame(ttk.Frame):
 
     def change_planperiod(self):
         self.text_log.insert('end', '- change planperiod\n')
-        change_planperiod = ChangePlanPeriod(self)
+        access_token = self.logins['dispatcher'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
+            return
+        change_planperiod = ChangePlanPeriod(self, access_token)
         self.wait_window(change_planperiod)
         self.text_log.insert('end', f'-- {self.planperiod}\n')
 
@@ -139,12 +155,16 @@ class MainFrame(ttk.Frame):
         self.all_actors = data
 
     def get_avail_days(self):
+        access_token = self.logins['dispatcher'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
+            return
         self.get_all_actors()
         self.text_log.insert('end', f'- get avail_days\n')
         if not self.all_actors:
             tk.messagebox.showerror(parent=self, message='Sie müssen zuerst alle Clowns importieren.')
             return
-        get_av_days = GetAvailDays(self, self.host)
+        get_av_days = GetAvailDays(self, self.host, access_token)
         self.wait_window(get_av_days)
 
         self.text_log.insert('end', f'-- {self.avail_days}\n')
@@ -320,13 +340,10 @@ class Login(CommonTopLevel):
 
 
 class CreateNewProject(CommonTopLevel):
-    def __init__(self, parent):
+    def __init__(self, parent, access_token: str):
         super().__init__(parent)
 
-        self.access_token = self.parent.logins['superuser'].access_token
-        if not self.access_token:
-            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Superuser-Rechte.')
-            self.destroy()
+        self.access_token = access_token
 
         self.lb_entry_projectname = tk.Label(self.frame_input, text='Projektname:')
         self.lb_entry_projectname.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 10))
@@ -411,15 +428,11 @@ class ChangeProjectName(CommonTopLevel):
         self.entry_name.insert(0, self.old_name)
 
 
-
 class CreatePerson(CommonTopLevel):
-    def __init__(self, parent):
+    def __init__(self, parent, access_token: str):
         super().__init__(parent)
 
-        self.access_token = self.parent.logins['admin'].access_token
-        if not self.access_token:
-            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
-            self.destroy()
+        self.access_token = access_token
 
         self.lb_fname = tk.Label(self.frame_input, text='Vorname:')
         self.lb_fname.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 5))
@@ -456,14 +469,11 @@ class CreatePerson(CommonTopLevel):
 
 
 class AssignPersonToPosition(CommonTopLevel):
-    def __init__(self, parent):
+    def __init__(self, parent, access_token: str):
         super().__init__(parent)
         self.bind('<Return>', lambda event: self.update_to_db())
 
-        self.access_token = self.parent.logins['admin'].access_token
-        if not self.access_token:
-            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
-            self.destroy()
+        self.access_token = access_token
 
         self.id_of_old_amin = None
         self.id_of_actual_admin = None
@@ -648,11 +658,11 @@ class AssignPersonToPosition(CommonTopLevel):
 
 
 class ChangePlanPeriod(CommonTopLevel):
-    def __init__(self, parent):
+    def __init__(self, parent, access_token: str):
         super().__init__(parent)
         self.bind('<Return>', lambda event: self.change())
 
-        self.access_token = self.parent.logins['dispatcher'].access_token
+        self.access_token = access_token
 
         self.frame_combo_select.config(padding='20 20 20 20')
 
@@ -775,7 +785,7 @@ class ChangePlanPeriod(CommonTopLevel):
 
 
 class GetAvailDays(tk.Toplevel):
-    def __init__(self, parent, host: str):
+    def __init__(self, parent, host: str, access_token: str):
         super().__init__(parent)
         self.grab_set()
         self.focus_set()
@@ -784,7 +794,7 @@ class GetAvailDays(tk.Toplevel):
         self.parent = parent
         self.host = host
 
-        self.access_token = self.parent.logins['dispatcher'].access_token
+        self.access_token = access_token
         if not self.access_token:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
             self.destroy()

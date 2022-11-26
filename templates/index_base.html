@@ -170,6 +170,9 @@
 <header class="w3-container w3-dark-grey w3-center w3-padding-64">
   {% block cont_header %}
   <h1 class="w3-margin w3-jumbo">hcc-plan</h1>
+  {% if InvalidCredentials == True %}
+      <p class="w3-xlarge">Loggin fehlgeschlagen.</p>
+  {% endif %}
   <p class="w3-xlarge">Zum Fortfahren bitte einloggen.</p>
   <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top" onclick="document.getElementById('login01').style.display='block'">Login</button>
   {% endblock %}
@@ -199,7 +202,7 @@
 <!--login form-->
 <div id="login01" class="modal">
 
-  <form class="modal-content animate" action="{{ url_for('actor_plan_periods') }}" method="post">
+  <form class="modal-content animate" action="{{ url_for('home_2') }}" method="post">
     <div class="imgcontainer">
       <span onclick="document.getElementById('login01').style.display='none'" class="close" title="Close Login">&times;</span>
       <img src="{{ url_for('static', path='/avatar.png') }}" alt="Avatar" class="avatar">

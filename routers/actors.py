@@ -12,23 +12,22 @@ templates = Jinja2Templates(directory='templates')
 router = APIRouter(prefix='/actors', tags=['Actors'])
 
 
-@router.post('/plan-periods')
-def actor_plan_periods(request: Request, email: EmailStr = Form(...), password: str = Form(...)):
-    if not (user := verify_actor_username(username=email)):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'Invalid Credentials')
+@router.get('/plan-periods')
+def actor_plan_periods(request: Request):
+    print('bin drin')
+    try:
+        token_data = get_current_user_cookie(request, 'access_token_actor', AuthorizationTypes.actor)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Fehler: {e}')
+    user_id = token_data.id
 
-    if not utils.verify(password, user.password):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'Invalid Credentials')
-
-    access_token = create_access_token(data={'user_id': user.id, 'authorization': AuthorizationTypes.actor.value})
-
-    plan_per_et_filled_in = get_open_plan_periods(user.id)
+    user = get_user_by_id(user_id)
+    plan_per_et_filled_in = get_open_plan_periods(user_id)
 
     response = templates.TemplateResponse('index_actor.html',
                                           context={'request': request, 'f_name': user.f_name, 'l_name': user.l_name,
                                                    'plan_periods': plan_per_et_filled_in, 'actor_id': user.id,
                                                    'success': None})
-    response.set_cookie(key='access_token_actor', value=access_token, httponly=True)
 
     return response
 

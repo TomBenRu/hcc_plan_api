@@ -1,0 +1,20 @@
+{% extends "index_base.html" %}
+{% block links %}
+    {{ super() }}
+{% endblock %}
+{% block menu_bar_items %}
+    <a href="{{ url_for('actor_plan_periods') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Eingabe Spieloptionen</a>
+{% endblock %}
+{% block navbar_small_items %}
+{% endblock %}
+{% block cont_header %}
+<h1 class="w3-margin w3-jumbo">hcc-plan</h1>
+  <p class="w3-xlarge">Hallo {{ f_name }} {{ l_name }}.</p>
+  <p class="w3-xlarge">Sie haben sich erfolgreich eingeloggt.</p>
+{% endblock %}
+{% block cont_main %}
+{% endblock %}
+{% block login_form %}
+{% endblock %}
+{% block quote_of_day %}
+{% endblock %}
