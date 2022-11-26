@@ -1,5 +1,6 @@
 import datetime
 import json
+import threading
 import time
 import tkinter as tk
 import tkinter.messagebox
@@ -13,6 +14,7 @@ from pydantic import EmailStr, BaseModel
 
 import databases.pydantic_models as pm
 from remote.tools import PlaceholderEntry
+from utilities.progressbars import ProgressIndeterm
 
 local = True
 
@@ -20,7 +22,7 @@ local = True
 if local:  # or (not local and from_outside):
     SERVER_ADDRESS = 'http://127.0.0.1:8000'
 else:
-    SERVER_ADDRESS = 'http://hcc-plan-curr.onrender.com'
+    SERVER_ADDRESS = 'https://hcc-plan-api.onrender.com'
 
 
 class MainFrame(ttk.Frame):
@@ -86,8 +88,12 @@ class MainFrame(ttk.Frame):
         self.text_log.insert('end', f'-- {self.new_person_data}\n')
 
     def new_team(self):
+        access_token = self.logins['admin'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            return
         self.text_log.insert('end', '- new team\n')
-        create_team = CreateTeam(self)
+        create_team = CreateTeam(self, access_token)
         self.wait_window(create_team)
         self.text_log.insert('end', f'-- {self.new_team_data}\n')
 
@@ -98,8 +104,12 @@ class MainFrame(ttk.Frame):
         self.text_log.insert('end', f'-- {self.new_jobs}\n')
 
     def new_planperiod(self):
+        access_token = self.logins['dispatcher'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
+            return
         self.text_log.insert('end', '- new planperiod\n')
-        create_planperiod = CreatePlanperiod(self, self.host)
+        create_planperiod = CreatePlanperiod(self, self.host, access_token)
         self.wait_window(create_planperiod)
         self.text_log.insert('end', f'-- {self.planperiod}\n')
 
@@ -218,7 +228,7 @@ class Login(CommonTopLevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.lift(parent)
-        self.bind('<Return>', lambda event: self.login())
+        self.bind('<Return>', lambda event: self.login_progress())
 
         self.access_data = {}
 
@@ -245,18 +255,26 @@ class Login(CommonTopLevel):
                                                    variable=self.var_chk_save_access_data)
         self.chk_save_access_data.grid(row=3, column=0, columnspan=2, pady=(5, 0))
 
-        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=15, command=self.login)
+        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=15, command=self.login_progress)
         self.bt_ok.grid(row=0, column=0, padx=(0, 5), pady=(0, 0), sticky='e')
         self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=15, command=self.destroy)
         self.bt_cancel.grid(row=0, column=1, padx=(5, 0), pady=(0, 0), sticky='w')
 
         self.get_login_persons()
 
-    def login(self):  # für das Endanwender-Programm: Logik und allgemeines Login auf Server. Server gibt alle Token und Rechte zurück.
+    def login_progress(self):
+        progressbar = ProgressIndeterm(self, 'Warten auf Login...')
+        progressbar.start()
+        t = threading.Thread(target=self.login, args=[progressbar])
+        t.start()
+
+    def login(self, progressbar: ProgressIndeterm):  # für das Endanwender-Programm: Logik und allgemeines Login auf Server. Server gibt alle Token und Rechte zurück.
         email = (self.entry_email.get()).lower()
         password = self.entry_password.get()
         rights = []
         login_data: dict[str, LoginData] = self.parent.logins
+        for data in login_data.values():
+            data.access_token = None
         for k, data in login_data.items():
             prefix = data.prefix
             name = data.name
@@ -266,13 +284,15 @@ class Login(CommonTopLevel):
                 data.access_token = access_token
 
         info_text = '\n- '.join(rights)
+        progressbar.stop()
+        progressbar.destroy()
         tk.messagebox.showinfo(parent=self, title='Info',
                                message=f'Eingelogged als:\n'
                                        f'- {info_text}')
         if self.var_chk_save_access_data.get():
             with open('access_data.json', 'w') as f:
                 if not (person := self.var_combo_persons.get()):
-                    tk.messagebox.showerror(parent=self, message='Sie müssen zuerst ihren Namen einttragen.')
+                    tk.messagebox.showerror(parent=self, message='Sie müssen zuerst ihren Namen eintragen.')
                 self.access_data[person] = {}
                 self.access_data[person]['email'] = self.entry_email.get()
                 self.access_data[person]['password'] = self.entry_password.get()
@@ -683,7 +703,8 @@ class ChangePlanPeriod(CommonTopLevel):
         self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=20, command=self.destroy)
         self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
 
-        self.get_teams()
+        self.var_combo_teams.set(list(self.values_combo_teams)[0])
+        self.autofill('team')
 
     def change(self):
         planperiod: pm.PlanPeriod = self.values_combo_planperiods[self.var_combo_planperiods.get()]
@@ -707,11 +728,15 @@ class ChangePlanPeriod(CommonTopLevel):
 
     def autofill(self, box: Literal['team', 'planperiod']):
         if box == 'team':
-            self.var_combo_planperiods.set('')
             planperiods = self.get_planperiods()
             self.values_combo_planperiods = {f'{pp.start.strftime("%d.%m.%y")} - {pp.end.strftime("%d.%m.%y")}': pp
                                              for pp in planperiods}
             self.combo_planperiods.config(values=list(self.values_combo_planperiods))
+
+            if self.values_combo_planperiods:
+                self.var_combo_planperiods.set(list(self.values_combo_planperiods)[0])
+                self.autofill('planperiod')
+
         if box == 'planperiod':
             start = self.values_combo_planperiods[self.var_combo_planperiods.get()].start
             end = self.values_combo_planperiods[self.var_combo_planperiods.get()].end
@@ -747,7 +772,6 @@ class ChangePlanPeriod(CommonTopLevel):
         response = requests.get(f'{self.parent.host}/dispatcher/teams',
                                 params={'access_token': self.access_token})
         return [pm.Team(**t) for t in response.json()]
-
 
 
 class GetAvailDays(tk.Toplevel):
@@ -809,15 +833,11 @@ class GetAvailDays(tk.Toplevel):
 
 
 class CreateTeam(CommonTopLevel):
-    def __init__(self, parent):
+    def __init__(self, parent, access_token: str):
         super().__init__(parent)
         self.bind('<Return>', lambda event: self.create())
 
-        self.access_token = self.parent.logins['admin'].access_token
-        if not self.access_token:
-            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
-            self.destroy()
-
+        self.access_token = access_token
         self.lb_name = tk.Label(self.frame_input, text='Name Team:')
         self.lb_name.grid(row=0, column=0, sticky='e', padx=(0, 5), pady=(0, 5))
         self.entry_name = tk.Entry(self.frame_input, width=50)
@@ -857,7 +877,7 @@ class CreateTeam(CommonTopLevel):
 
 
 class CreatePlanperiod(tk.Toplevel):
-    def __init__(self, parent, host: str):
+    def __init__(self, parent, host: str, access_token: str):
         super().__init__(parent)
         self.grab_set()
         self.focus_set()
@@ -866,10 +886,7 @@ class CreatePlanperiod(tk.Toplevel):
         self.parent = parent
         self.host = host
 
-        self.access_token = self.parent.logins['dispatcher'].access_token
-        if not self.access_token:
-            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
-            self.destroy()
+        self.access_token = access_token
 
         self.date = datetime.datetime.now()
         self.teams: list[pm.TeamShow] | None = None
@@ -941,9 +958,11 @@ class CreatePlanperiod(tk.Toplevel):
         if type(data) == dict and data.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
             self.destroy()
-        last_day: str = response.json()
-        last_day: datetime.date = datetime.date(*[int(v) for v in last_day.split('-')])
-        mindate = last_day + datetime.timedelta(days=1)
+        if data:
+            last_day: datetime.date = datetime.date(*[int(v) for v in data.split('-')])
+            mindate = last_day + datetime.timedelta(days=1)
+        else:
+            mindate = None
         self.calendar_from.config(mindate=mindate)
         self.calendar_from.set_date(mindate)
         self.calendar_to.config(mindate=mindate)

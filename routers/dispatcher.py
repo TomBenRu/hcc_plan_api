@@ -103,7 +103,11 @@ def get_planperiod_last_recent_date(access_token: str, team_id: str):
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials: {e}')
     user_id = token_data.id
 
-    date = get_planperiods_last_recent_date(team_id)
+    try:
+        date = get_planperiods_last_recent_date(team_id)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler: {e}')
+
     return date
 
 

@@ -1,7 +1,7 @@
 import datetime
 import secrets
 import time
-from typing import Type
+from typing import Type, Optional
 from uuid import UUID
 
 from pony.orm import Database, db_session, select, TransactionIntegrityError
@@ -158,13 +158,13 @@ def get_teams_of_dispatcher(dispatcher_id: UUID) -> list[pm.Team]:
         return [pm.Team.from_orm(t) for t in Person[dispatcher_id].teams_of_dispatcher]
 
 
-def get_planperiods_last_recent_date(team_id: str) -> datetime.date:
+def get_planperiods_last_recent_date(team_id: str) -> Optional[datetime.date]:
     with db_session:
         date = Team[UUID(team_id)].plan_periods.end
         if date:
             date = max(date)
         else:
-            date = datetime.date(1980, 1, 1)
+            date = None
         return date
 
 
