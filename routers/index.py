@@ -83,13 +83,12 @@ def account_settings(request: Request, confirmed_password: bool = True):
 
 @router.post('/account')
 def write_new_account_settings(request: Request, email: EmailStr = Form(...), password: str = Form(...),
-                               confirm_password: str = Form(...)):
+                               confirmed_password: str = Form(...)):
     try:
         token_data = get_current_user_cookie(request, 'access_token_actor', AuthorizationTypes.actor)
     except Exception as e:
         return RedirectResponse(request.url_for('home'), status_code=status.HTTP_303_SEE_OTHER)
-    print(f'{password = }, {confirm_password = }')
-    if password != confirm_password:
+    if password != confirmed_password:
         redirect_url = URL(request.url_for('account_settings')).include_query_params(confirmed_password=False)
         return RedirectResponse(redirect_url, status_code=status.HTTP_303_SEE_OTHER)
     user_id = token_data.id
