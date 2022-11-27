@@ -153,6 +153,14 @@ def get_open_plan_periods(user_id: UUID) -> list[pm.PlanPerEtFilledIn]:
     return plan_p_et_filled_in
 
 
+def set_new_actor_account_settings(person_id: UUID, new_email: EmailStr, new_password: str):
+    with db_session:
+        user = Person[person_id]
+        hashed_psw = utils.hash_psw(new_password)
+        user.set(email=new_email, password=hashed_psw)
+        return pm.Person.from_orm(user)
+
+
 def get_teams_of_dispatcher(dispatcher_id: UUID) -> list[pm.Team]:
     with db_session:
         return [pm.Team.from_orm(t) for t in Person[dispatcher_id].teams_of_dispatcher]

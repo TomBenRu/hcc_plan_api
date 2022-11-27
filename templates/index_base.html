@@ -176,6 +176,9 @@
   {% if logged_out == True %}
       <p class="w3-xxlarge">Logout erfolgreich.</p>
   {% endif %}
+  {% if account_changed == True %}
+      <p class="w3-xlarge">Deine Zugangsdaten wurden geändert. Um fortzufahren musst du dich erneut einloggen.</p>
+  {% endif %}
   <p class="w3-xlarge">Zum Fortfahren bitte einloggen.</p>
   <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top" onclick="document.getElementById('login01').style.display='block'">Login</button>
   {% endblock %}

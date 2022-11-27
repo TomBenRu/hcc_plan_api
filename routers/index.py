@@ -2,10 +2,11 @@ from fastapi import HTTPException, status, APIRouter, Request, Depends, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from pydantic import EmailStr
+from starlette.datastructures import URL
 from starlette.responses import RedirectResponse
 
 from databases.enums import AuthorizationTypes
-from databases.services import get_user_by_id
+from databases.services import get_user_by_id, set_new_actor_account_settings
 from oauth2_authentication import verify_actor_username, create_access_token, get_current_user_cookie
 from utilities import utils
 
@@ -28,7 +29,6 @@ def home(request: Request):
                                           context={'request': request, 'name_project': name_project,
                                                    'f_name': user.f_name, 'l_name': user.l_name})
     return response
-
 
 
 @router.post('/home')
@@ -55,13 +55,52 @@ def logout(request: Request):
     try:
         token_data = get_current_user_cookie(request, 'access_token_actor', AuthorizationTypes.actor)
     except Exception as e:
-        return templates.TemplateResponse('index.html', context={'request': request, 'InvalidCredentials': False,
-                                                                 'logged_out': True})
+        return templates.TemplateResponse('index.html',
+                                          context={'request': request, 'InvalidCredentials': False, 'logged_out': True})
     user_id = token_data.id
     response = templates.TemplateResponse('index.html',
-                                          context={'request': request, 'InvalidCredentials': False,
-                                                                 'logged_out': True})
+                                          context={'request': request, 'InvalidCredentials': False, 'logged_out': True})
     response.delete_cookie('access_token_actor')
     return response
 
 
+@router.get('/account')
+def account_settings(request: Request, confirmed_password: bool = True):
+    try:
+        token_data = get_current_user_cookie(request, 'access_token_actor', AuthorizationTypes.actor)
+    except Exception as e:
+        return templates.TemplateResponse('index.html',
+                                          context={'request': request, 'InvalidCredentials': False, 'logged_out': True})
+    user_id = token_data.id
+    user = get_user_by_id(user_id)
+    name_project = user.project.name
+
+    return templates.TemplateResponse('account_settings_actor.html',
+                                      context={'request': request, 'name_project': name_project,
+                                               'f_name': user.f_name, 'l_name': user.l_name,
+                                               'confirmed_password': confirmed_password})
+
+
+@router.post('/account')
+def write_new_account_settings(request: Request, email: EmailStr = Form(...), password: str = Form(...),
+                               confirm_password: str = Form(...)):
+    try:
+        token_data = get_current_user_cookie(request, 'access_token_actor', AuthorizationTypes.actor)
+    except Exception as e:
+        return RedirectResponse(request.url_for('home'), status_code=status.HTTP_303_SEE_OTHER)
+    print(f'{password = }, {confirm_password = }')
+    if password != confirm_password:
+        redirect_url = URL(request.url_for('account_settings')).include_query_params(confirmed_password=False)
+        return RedirectResponse(redirect_url, status_code=status.HTTP_303_SEE_OTHER)
+    user_id = token_data.id
+
+    try:
+        person = set_new_actor_account_settings(person_id=user_id, new_email=email, new_password=password)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler: {e}')
+
+    response = templates.TemplateResponse('index.html',
+                                          context={'request': request, 'InvalidCredentials': False, 'logged_out': False,
+                                                   'account_changed': True})
+    response.delete_cookie('access_token_actor')
+    return response

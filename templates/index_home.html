@@ -4,7 +4,7 @@
 {% endblock %}
 {% block menu_bar_items %}
     <a href="{{ url_for('actor_plan_periods') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Eingabe Spieloptionen</a>
-    <a class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Einstellungen</a>
+    <a href="{{ url_for('account_settings') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Einstellungen</a>
     <a href="{{ url_for('logout') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Logout</a>
 {% endblock %}
 {% block navbar_small_items %}

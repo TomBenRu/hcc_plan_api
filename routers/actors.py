@@ -3,7 +3,8 @@ from fastapi.templating import Jinja2Templates
 from pydantic import EmailStr
 
 from databases.enums import AuthorizationTypes
-from databases.services import find_user_by_email, available_days_to_db, get_open_plan_periods, get_user_by_id
+from databases.services import find_user_by_email, available_days_to_db, get_open_plan_periods, get_user_by_id, \
+    set_new_actor_account_settings
 from oauth2_authentication import create_access_token, get_current_user_cookie, verify_actor_username
 from utilities import utils
 
