@@ -27,10 +27,10 @@
 {% endblock %}
 
 {% block cont_header %}
-    <p class="w3-xlarge">Hallo {{ f_name }} {{ l_name }}.</p>
+    <p class="w3-xlarge">{{ name_project }}</p>
+    <p class="w3-large">Hallo {{ f_name }} {{ l_name }}.</p>
     {% if success %}
-        <p>Die Termine wurden erfolgreich übertragen.</p>
-        <p>Du kannst die Bearbeitung der Sperrtermine fortsetzen.</p>
+        <p>Die Termine wurden erfolgreich übertragen. Du kannst die Bearbeitung der Sperrtermine fortsetzen.</p>
     {% else %}
         <p>Hier kannst du deine Sperrtermine der aktuellen Planungsmonate bearbeiten.</p>
     {% endif %}

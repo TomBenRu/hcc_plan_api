@@ -14,7 +14,6 @@ router = APIRouter(prefix='/actors', tags=['Actors'])
 
 @router.get('/plan-periods')
 def actor_plan_periods(request: Request):
-    print('bin drin')
     try:
         token_data = get_current_user_cookie(request, 'access_token_actor', AuthorizationTypes.actor)
     except Exception as e:
@@ -22,10 +21,12 @@ def actor_plan_periods(request: Request):
     user_id = token_data.id
 
     user = get_user_by_id(user_id)
+    name_project = user.project.name
     plan_per_et_filled_in = get_open_plan_periods(user_id)
 
     response = templates.TemplateResponse('index_actor.html',
-                                          context={'request': request, 'f_name': user.f_name, 'l_name': user.l_name,
+                                          context={'request': request, 'name_project': name_project,
+                                                   'f_name': user.f_name, 'l_name': user.l_name,
                                                    'plan_periods': plan_per_et_filled_in, 'actor_id': user.id,
                                                    'success': None})
 
@@ -45,9 +46,11 @@ async def actor_plan_periods_handler(request: Request):
     plan_periods = available_days_to_db(dict(formdata), user_id)
 
     user = get_user_by_id(user_id)
+    name_project = user.project.name
     plan_per_et_filled_in = get_open_plan_periods(user_id)
 
     return templates.TemplateResponse('index_actor.html',
-                                      context={'request': request, 'f_name': user.f_name, 'l_name': user.l_name,
+                                      context={'request': request, 'name_project': name_project,
+                                               'f_name': user.f_name, 'l_name': user.l_name,
                                                'plan_periods': plan_per_et_filled_in, 'actor_id': user_id,
                                                'success': True})

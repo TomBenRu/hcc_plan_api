@@ -4,13 +4,15 @@
 {% endblock %}
 {% block menu_bar_items %}
     <a href="{{ url_for('actor_plan_periods') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Eingabe Spieloptionen</a>
+    <a class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Einstellungen</a>
+    <a href="{{ url_for('logout') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Logout</a>
 {% endblock %}
 {% block navbar_small_items %}
 {% endblock %}
 {% block cont_header %}
-<h1 class="w3-margin w3-jumbo">hcc-plan</h1>
+<h1 class="w3-margin w3-jumbo">{{ name_project }}</h1>
   <p class="w3-xlarge">Hallo {{ f_name }} {{ l_name }}.</p>
-  <p class="w3-xlarge">Sie haben sich erfolgreich eingeloggt.</p>
+  <p class="w3-xlarge">Du hast dich erfolgreich eingeloggt.</p>
 {% endblock %}
 {% block cont_main %}
 {% endblock %}

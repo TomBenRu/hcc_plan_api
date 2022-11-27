@@ -169,9 +169,12 @@
 <!-- Header -->
 <header class="w3-container w3-dark-grey w3-center w3-padding-64">
   {% block cont_header %}
-  <h1 class="w3-margin w3-jumbo">hcc-plan</h1>
+  <h1 class="w3-margin w3-jumbo">{{ name_project }}</h1>
   {% if InvalidCredentials == True %}
-      <p class="w3-xlarge">Loggin fehlgeschlagen.</p>
+      <p class="w3-xxlarge">Loggin fehlgeschlagen.</p>
+  {% endif %}
+  {% if logged_out == True %}
+      <p class="w3-xxlarge">Logout erfolgreich.</p>
   {% endif %}
   <p class="w3-xlarge">Zum Fortfahren bitte einloggen.</p>
   <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top" onclick="document.getElementById('login01').style.display='block'">Login</button>
