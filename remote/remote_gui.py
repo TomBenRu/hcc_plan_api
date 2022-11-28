@@ -535,8 +535,9 @@ class AssignPersonToPosition(CommonTopLevel):
         for i, (id_team, team) in enumerate(self.all_teams_dict_for_radio_chk.items(), start=2):
             tk.Label(self.frame_checks,
                      text=f'Team {team.name}').grid(row=i, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
-            tk.Radiobutton(self.frame_checks, variable=self.var_radio_teams_actor, value=id_team,
-                           command=lambda id_t=id_team: self.new_selection_team(profession='actor', id_team=id_t)).grid(row=i, column=1, padx=5, pady=5)
+            radio_actor = tk.Radiobutton(self.frame_checks, variable=self.var_radio_teams_actor, value=id_team,
+                           command=lambda id_t=id_team: self.new_selection_team(profession='actor', id_team=id_t))
+            radio_actor.grid(row=i, column=1, padx=5, pady=5)
             self.vars_all_checks_team[id_team] = tk.BooleanVar()
             self.all_checks_team[id_team] = tk.Checkbutton(self.frame_checks,
                                                            variable=self.vars_all_checks_team[id_team],
@@ -629,7 +630,7 @@ class AssignPersonToPosition(CommonTopLevel):
                 self.var_radio_teams_actor.set('kein Team')
                 return
             team_id: str = self.var_radio_teams_actor.get()
-            person.team_of_actor = self.all_teams_dict_for_radio_chk[team_id]
+            person.team_of_actor = self.all_teams_dict_for_radio_chk.get(team_id)
             return
 
         if profession == 'dispatcher':
@@ -846,6 +847,9 @@ class ChangePlanPeriod(CommonTopLevel):
         self.autofill('team')
 
     def change(self):
+        if not self.var_combo_planperiods.get():
+            tk.messagebox.showinfo(parent=self, message='Bitte wählen Sie zuest eine Planperiode aus.')
+            return
         planperiod: pm.PlanPeriod = self.values_combo_planperiods[self.var_combo_planperiods.get()]
         planperiod.start = self.start.get_date()
         planperiod.end = self.end.get_date()
@@ -1199,7 +1203,6 @@ class DeletePlanperiod(CommonTopLevel):
             self.var_combo_planperiods.set(list(self.values_combo_planperiods)[0])
 
 
-
 class MainMenu(tk.Menu):
     def __init__(self, parent, root: tk.Tk):
         super().__init__(master=parent)
@@ -1223,18 +1226,19 @@ class MainMenu(tk.Menu):
 
         self.supervisor.add_command(label='Neues Projekt', command=parent.new_project)
 
-        self.admin.add_command(label='Neues Team', command=parent.new_team)
-        self.admin.add_command(label='Neue/r Mitarbeiter:in', command=parent.new_person)
-        self.admin.add_command(label='Mitarbeiter:in einer Position zuweisen', command=parent.assign_person_to_position)
-        self.admin.add_command(label='Projektname ändern', command=parent.change_project_name)
-        self.admin.add_command(label='Mitarbeiter löschen', command=parent.delete_person)
-        self.admin.add_command(label='Team löschen', command=parent.delete_team)
+        self.admin.add_command(label='Neues Team...', command=parent.new_team)
+        self.admin.add_command(label='Neue/r Mitarbeiter:in...', command=parent.new_person)
+        self.admin.add_command(label='Mitarbeiter:in einer Position zuweisen...',
+                               command=parent.assign_person_to_position)
+        self.admin.add_command(label='Team löschen...', command=parent.delete_team)
+        self.admin.add_command(label='Mitarbeiter löschen...', command=parent.delete_person)
+        self.admin.add_command(label='Projektname ändern...', command=parent.change_project_name)
 
-        self.dispatcher.add_command(label='Neue Planperiode', command=parent.new_planperiod)
-        self.dispatcher.add_command(label='Planperiode ändern', command=parent.change_planperiod)
-        self.dispatcher.add_command(label='Alle Clowns', command=parent.get_all_actors)
+        self.dispatcher.add_command(label='Neue Planperiode...', command=parent.new_planperiod)
+        self.dispatcher.add_command(label='Planperiode ändern...', command=parent.change_planperiod)
+        self.dispatcher.add_command(label='Planperiode löschen...', command=parent.delete_planperiod)
         self.dispatcher.add_command(label='Spieloptionen...', command=parent.get_avail_days)
-        self.dispatcher.add_command(label='Planperiode löschen', command=parent.delete_planperiod)
+        self.dispatcher.add_command(label='Alle Clowns...', command=parent.get_all_actors)
 
 
 if __name__ == '__main__':
