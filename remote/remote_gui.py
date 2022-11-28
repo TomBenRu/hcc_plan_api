@@ -105,6 +105,14 @@ class MainFrame(ttk.Frame):
         self.wait_window(create_team)
         self.text_log.insert('end', f'-- {self.new_team_data}\n')
 
+    def delete_team(self):
+        access_token = self.logins['admin'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            return
+        self.text_log.insert('end', '- delete team\n')
+        DeleteTeam(self, access_token)
+
     def assign_person_to_position(self):
         self.text_log.insert('end', '- new jobs for persons\n')
         access_token = self.logins['admin'].access_token
@@ -115,6 +123,14 @@ class MainFrame(ttk.Frame):
         self.wait_window(assign_person)
         self.text_log.insert('end', f'-- {self.new_jobs}\n')
 
+    def delete_person(self):
+        self.text_log.insert('end', '- delete entry\n')
+        access_token = self.logins['admin'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            return
+        DeletePerson(parent=self, access_token=access_token)
+
     def new_planperiod(self):
         access_token = self.logins['dispatcher'].access_token
         if not access_token:
@@ -124,6 +140,14 @@ class MainFrame(ttk.Frame):
         create_planperiod = CreatePlanperiod(self, self.host, access_token)
         self.wait_window(create_planperiod)
         self.text_log.insert('end', f'-- {self.planperiod}\n')
+
+    def delete_planperiod(self):
+        access_token = self.logins['dispatcher'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
+            return
+        self.text_log.insert('end', '- delete planperiod\n')
+        DeletePlanperiod(self, access_token)
 
     def change_planperiod(self):
         self.text_log.insert('end', '- change planperiod\n')
@@ -657,6 +681,111 @@ class AssignPersonToPosition(CommonTopLevel):
             return {str(t.id): t for t in self.all_teams}
 
 
+class DeleteTeam(CommonTopLevel):
+    def __init__(self, parent, access_token):
+        super().__init__(parent)
+
+        self.access_token = access_token
+        self.all_teams = self.get_teams()
+        self.all_teams_dict_for_combo = {t.name: t for t in self.all_teams}
+
+        self.var_combo_teams = tk.StringVar()
+
+        self.lb_combo_teams = tk.Label(self.frame_input, text='Mitarbeiter:in:')
+        self.lb_combo_teams.grid(row=0, column=0, sticky='e', padx=(0, 0), pady=(0, 5))
+        self.combo_teams = ttk.Combobox(self.frame_input, values=list(self.all_teams_dict_for_combo),
+                                        textvariable=self.var_combo_teams, state='readonly')
+        self.combo_teams.grid(row=0, column=1, sticky='w', padx=(0, 0), pady=(0, 5))
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='Löschen', width=15, command=self.delete_team)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 5))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=15, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
+
+    def delete_team(self):
+        team = self.all_teams_dict_for_combo[self.var_combo_teams.get()]
+        if not tk.messagebox.askokcancel(parent=self,
+                                         message=f'Achtung!!!\n{team.name} wird unwiderruflich aus der Datenbank '
+                                                 f'gelöscht.\nDies kann nicht rückgängig gemacht werden.'):
+            return
+
+        response = requests.delete(f'{self.parent.host}/admin/team',
+                                   params={'access_token': self.access_token, 'team_id': team.id})
+
+        try:
+            deleted_team = pm.Team.parse_obj(response.json())
+            tk.messagebox.showinfo(parent=self,
+                                   message=f'Das Team "{deleted_team.name}" mit allen verbundenen Planperioden wurde '
+                                           f'aus der Datenbank gelöscht.')
+            self.destroy()
+            return
+        except Exception as e:
+            tk.messagebox.showinfo(parent=self, message=f'Fehler: {response.json()}\nException: {e}')
+            self.destroy()
+
+    def get_teams(self):
+        response = requests.get(f'{self.parent.host}/admin/teams',
+                                params={'access_token': self.access_token})
+        data = response.json()
+        if type(data) == dict and data.get('status_code') == 401:
+            tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
+            self.destroy()
+
+        return sorted([pm.Team(**team) for team in data], key=lambda t: t.name)
+
+
+class DeletePerson(CommonTopLevel):
+    def __init__(self, parent, access_token):
+        super().__init__(parent)
+
+        self.access_token = access_token
+        self.all_persons = self.get_persons()
+        self.all_persons_dict_for_combo = {f'{p.f_name} {p.l_name}': p for p in self.all_persons}
+
+        self.var_combo_persons = tk.StringVar()
+
+        self.lb_combo_persons = tk.Label(self.frame_input, text='Mitarbeiter:in:')
+        self.lb_combo_persons.grid(row=0, column=0, sticky='e', padx=(0, 0), pady=(0, 5))
+        self.combo_persons = ttk.Combobox(self.frame_input, values=list(self.all_persons_dict_for_combo),
+                                          textvariable=self.var_combo_persons, state='readonly')
+        self.combo_persons.grid(row=0, column=1, sticky='w', padx=(0, 0), pady=(0, 5))
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='Löschen', width=15, command=self.delete_person)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 5))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=15, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
+
+    def delete_person(self):
+        person = self.all_persons_dict_for_combo[self.var_combo_persons.get()]
+        if not tk.messagebox.askokcancel(parent=self,
+                                         message=f'Achtung!!!\n{person.f_name} {person.l_name} wird unwiderruflich '
+                                                 f'aus der Datenbank gelöscht.\nDies kann nicht rückgängig gemacht '
+                                                 f'werden.'):
+            return
+
+        response = requests.delete(f'{self.parent.host}/admin/person',
+                                   params={'access_token': self.access_token, 'person_id': person.id})
+
+        try:
+            deleted_person = pm.Person(**response.json())
+            tk.messagebox.showinfo(parent=self,
+                                   message=f'Der/die Mitarbeiter:in "{deleted_person.f_name} {deleted_person.l_name}" '
+                                           f'wurde aus der Datenbank gelöscht.')
+            self.destroy()
+            return
+        except Exception as e:
+            tk.messagebox.showinfo(parent=self, message=f'Fehler {response.json()}\nException {e}')
+        self.destroy()
+
+    def get_persons(self):
+        response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.access_token})
+        try:
+            all_persons = sorted([pm.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
+            return all_persons
+        except Exception as e:
+            tk.messagebox.showerror(parent=self, message=f'Ein Fehler trat auf: {e}')
+
+
 class ChangePlanPeriod(CommonTopLevel):
     def __init__(self, parent, access_token: str):
         super().__init__(parent)
@@ -781,7 +910,7 @@ class ChangePlanPeriod(CommonTopLevel):
     def get_teams(self):
         response = requests.get(f'{self.parent.host}/dispatcher/teams',
                                 params={'access_token': self.access_token})
-        return [pm.Team(**t) for t in response.json()]
+        return sorted([pm.Team(**t) for t in response.json()], key=lambda t: t.name)
 
 
 class GetAvailDays(tk.Toplevel):
@@ -994,6 +1123,83 @@ class CreatePlanperiod(tk.Toplevel):
         tk.messagebox.showinfo(parent=self.parent, message='Planperiode wurde erfolgreich erstellt.')
 
 
+class DeletePlanperiod(CommonTopLevel):
+    def __init__(self, parent, access_token):
+        super().__init__(parent)
+
+        self.parent = parent
+        self.access_token = access_token
+
+        self.frame_combo_select.config(padding='20 20 20 20')
+
+        self.var_combo_planperiods = tk.StringVar()
+        self.var_combo_teams = tk.StringVar()
+        self.values_combo_teams = {t.name: str(t.id) for t in self.get_teams()}
+        self.values_combo_planperiods: dict[str, pm.PlanPeriod] = {}
+
+        self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Team')
+        self.lb_combo_teams.grid(row=0, column=0, sticky='w')
+        self.combo_teams = ttk.Combobox(self.frame_combo_select, values=list(self.values_combo_teams),
+                                        textvariable=self.var_combo_teams, state='readonly')
+        self.combo_teams.bind('<<ComboboxSelected>>', lambda event: self.autofill())
+        self.combo_teams.grid(row=1, column=0, padx=(0, 5))
+
+        self.lb_combo_planperiods = tk.Label(self.frame_combo_select, text='Planperiode:')
+        self.lb_combo_planperiods.grid(row=0, column=1, sticky='w', padx=(5, 0))
+        self.combo_planperiods = ttk.Combobox(self.frame_combo_select, values=[],
+                                              textvariable=self.var_combo_planperiods, state='readonly')
+        self.combo_planperiods.grid(row=1, column=1, padx=(5, 0))
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='Löschen', width=15, command=self.delete_planperiod)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 5))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=15, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
+
+    def delete_planperiod(self):
+        value_planperiod = self.var_combo_planperiods.get()
+        planperiod = self.values_combo_planperiods[value_planperiod]
+        if not tk.messagebox.askokcancel(parent=self,
+                                         message=f'Achtung!!!\nDie Planperiode {value_planperiod} wird unwiderruflich '
+                                                 f'aus der Datenbank gelöscht.\nDas gleiche gilt auch für die '
+                                                 f'dazugehörigen Spieloptionen.'
+                                                 f'\nDieser Vorgang kann nicht rückgängig gemacht werden.'):
+            return
+        response = requests.delete(f'{self.parent.host}/dispatcher/planperiod',
+                                   params={'access_token': self.access_token, 'planperiod_id': planperiod.id})
+        try:
+            deleted_planperiod = pm.PlanPeriod(**response.json())
+            tk.messagebox.showinfo(parent=self,
+                                   message=f'Die Planperiode "{deleted_planperiod.start}-{deleted_planperiod.end}"'
+                                           f'mit allen verbundenen Spieloptionen wurde gelöscht')
+            self.destroy()
+            return
+        except Exception as e:
+            tk.messagebox.showinfo(parent=self, message=f'Fehler: {response.json()}\n Exception: {e}')
+            self.destroy()
+
+    def get_planperiods(self):
+        team_id = self.values_combo_teams[self.var_combo_teams.get()]
+        response = requests.get(f'{self.parent.host}/dispatcher/planperiods',
+                                params={'access_token': self.access_token, 'team_id': team_id})
+        planperiods = sorted([pm.PlanPeriod(**pp) for pp in response.json()], key=lambda v: v.start, reverse=True)
+        return planperiods
+
+    def get_teams(self):
+        response = requests.get(f'{self.parent.host}/dispatcher/teams',
+                                params={'access_token': self.access_token})
+        return sorted([pm.Team(**t) for t in response.json()], key=lambda t: t.name)
+
+    def autofill(self):
+        planperiods = self.get_planperiods()
+        self.values_combo_planperiods = {f'{pp.start.strftime("%d.%m.%y")} - {pp.end.strftime("%d.%m.%y")}': pp
+                                         for pp in planperiods}
+        self.combo_planperiods.config(values=list(self.values_combo_planperiods))
+
+        if self.values_combo_planperiods:
+            self.var_combo_planperiods.set(list(self.values_combo_planperiods)[0])
+
+
+
 class MainMenu(tk.Menu):
     def __init__(self, parent, root: tk.Tk):
         super().__init__(master=parent)
@@ -1021,11 +1227,14 @@ class MainMenu(tk.Menu):
         self.admin.add_command(label='Neue/r Mitarbeiter:in', command=parent.new_person)
         self.admin.add_command(label='Mitarbeiter:in einer Position zuweisen', command=parent.assign_person_to_position)
         self.admin.add_command(label='Projektname ändern', command=parent.change_project_name)
+        self.admin.add_command(label='Mitarbeiter löschen', command=parent.delete_person)
+        self.admin.add_command(label='Team löschen', command=parent.delete_team)
 
         self.dispatcher.add_command(label='Neue Planperiode', command=parent.new_planperiod)
         self.dispatcher.add_command(label='Planperiode ändern', command=parent.change_planperiod)
         self.dispatcher.add_command(label='Alle Clowns', command=parent.get_all_actors)
         self.dispatcher.add_command(label='Spieloptionen...', command=parent.get_avail_days)
+        self.dispatcher.add_command(label='Planperiode löschen', command=parent.delete_planperiod)
 
 
 if __name__ == '__main__':

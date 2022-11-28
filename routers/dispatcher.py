@@ -9,7 +9,7 @@ from databases.services import (create_new_plan_period,
                                 change_status_planperiod, get_actors_in_dispatcher_teams, get_avail_days_from_actor,
                                 get_planperiods_last_recent_date, get_project_from_user_id,
                                 make_person__actor_of_team, get_teams_of_dispatcher, get_planperiods_of_team,
-                                update_1_planperiod)
+                                update_1_planperiod, delete_planperiod_from_team)
 from oauth2_authentication import (verify_supervisor_username, verify_supervisor_password, create_access_token,
                                    verify_access_token, verify_su_access_token,
                                    get_current_dispatcher, verify_dispatcher_username, verify_user_password)
@@ -74,10 +74,24 @@ def new_planperiod(access_token: str, team_id: str, date_start: str, date_end: s
     try:
         new_plan_period = create_new_plan_period(team_id, date_start, date_end, deadline, notes)
     except ValueError as e:
-        print('Exception:', e)
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler: {e}')
 
     return new_plan_period
+
+
+@router.delete('/planperiod')
+def delete_planperiod(access_token: str, planperiod_id: str):
+    try:
+        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
+    user_id = token_data.id
+
+    try:
+        deleted_planperiod = delete_planperiod_from_team(planperiod_id=UUID(planperiod_id))
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Error: {e}')
+    return deleted_planperiod
 
 
 @router.put('/planperiod')

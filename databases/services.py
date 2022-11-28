@@ -30,6 +30,20 @@ def create_person(admin_id: UUID, person: pm.PersonCreate):
         return {'person': pm.PersonShow.from_orm(new_person), 'password': password}
 
 
+def delete_person_from_project(person_id: UUID):
+    with db_session:
+        person_to_delete = Person[person_id]
+        person_to_delete.delete()
+        return pm.Person.from_orm(person_to_delete)
+
+
+def delete_team_from_project(team_id: UUID):
+    with db_session:
+        team_to_delete = Team[team_id]
+        team_to_delete.delete()
+        return pm.Team.from_orm(team_to_delete)
+
+
 def make_person__actor_of_team(person: pm.Person, team: pm.Team, user_id: UUID):
     with db_session:
         dispatcher = Person[user_id]
@@ -257,6 +271,14 @@ def create_new_plan_period(team_id: str, date_start: datetime.date | None, date_
         plan_period = PlanPeriod(start=date_start, end=date_end, deadline=deadline, notes=notes,
                                  team=Team.get(lambda t: t.id == UUID(team_id)))
         return pm.PlanPeriod.from_orm(plan_period)
+
+
+def delete_planperiod_from_team(planperiod_id: UUID):
+    with db_session:
+        planperiod_to_delete = PlanPeriod[planperiod_id]
+        deleted_planperiod = pm.PlanPeriod.from_orm(planperiod_to_delete)
+        planperiod_to_delete.delete()
+        return deleted_planperiod
 
 
 def change_status_planperiod(plan_period_id: int, closed: bool, dispatcher_id: int):

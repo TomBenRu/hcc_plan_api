@@ -32,7 +32,7 @@ class Person(db_actors.Entity):
     last_modified = Required(datetime, default=lambda: datetime.utcnow())
     project = Required(Project, reverse='persons')
     project_of_admin = Optional(Project, reverse='admin')
-    teams_of_dispatcher = Set('Team', reverse='dispatcher')
+    teams_of_dispatcher = Set('Team', reverse='dispatcher', cascade_delete=False)
     team_of_actor = Optional('Team', reverse='actors')
     availabless = Set('Availables')
 
@@ -107,7 +107,6 @@ class PlanPeriod(db_actors.Entity):
             for avail_day in self.avail_days:
                 if avail_day.day < self.start or avail_day.day > self.end:
                     avail_day.delete()
-
 
 
 class AvailDay(db_actors.Entity):
