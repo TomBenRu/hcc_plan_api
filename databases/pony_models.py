@@ -21,6 +21,9 @@ class Project(db_actors.Entity):
     def teams(self):
         return self.persons.teams_of_dispatcher
 
+    def before_delete(self):
+        Team.select(lambda t: t.dispatcher.project.id == self.id).delete()
+
 
 class Person(db_actors.Entity):
     id = PrimaryKey(UUID, auto=True)

@@ -452,10 +452,32 @@ class DeleteAccount(CommonTopLevel):
         self.entry_id = tk.Entry(self.frame_entrys, width=60)
         self.entry_id.grid(row=3, column=0, sticky='w', pady=(0, 10))
 
-        self.bt_ok = tk.Button(self.frame_buttons, text='Löschen', width=20)
+        self.bt_ok = tk.Button(self.frame_buttons, text='Löschen', width=20, command=self.delete_account)
         self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 5))
         self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=20, command=self.destroy)
         self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
+
+    def delete_account(self):
+        if self.entry_name.get() != self.project.name or self.entry_id.get() != str(self.project.id):
+            tk.messagebox.showerror(parent=self,
+                                    message='Die Einträge für Account-Name bzw. Account-ID sind nicht korrekt.')
+        else:
+            if not tk.messagebox.askyesno(parent=self,
+                                          message=f'Möchten Sie ihren Account "{self.project.name}" mit allen '
+                                                  f'damit verbundenen Daten wirklich entgültig löschen?\n'
+                                                  f'(Dieser Vorgang kann nicht rückgängig gemacht werden.)'):
+                return
+            response = requests.delete(f'{self.parent.host}/admin/account',
+                                       params={'access_token': self.access_token, 'project_id': self.project.id})
+            try:
+                deleted_project = pm.Project.parse_obj(response.json())
+                tk.messagebox.showinfo(parent=self,
+                                       message=f'Der Account {deleted_project.name} wurde vollständig entfernt.')
+                self.destroy()
+                return
+            except Exception as e:
+                tk.messagebox.showerror(parent=self, message=f'Fehler: {response.text}, Exception: {e}')
+                return
 
 
 
