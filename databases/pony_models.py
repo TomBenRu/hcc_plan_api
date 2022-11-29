@@ -22,7 +22,8 @@ class Project(db_actors.Entity):
         return self.persons.teams_of_dispatcher
 
     def before_delete(self):
-        Team.select(lambda t: t.dispatcher.project.id == self.id).delete()
+        for team in self.teams:
+            team.delete()
 
 
 class Person(db_actors.Entity):
