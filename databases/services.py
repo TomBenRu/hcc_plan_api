@@ -254,6 +254,10 @@ def create_account(project: pm.ProjectCreate, person: pm.PersonCreate):
 def delete_a_account(project_id: UUID):
     with db_session:
         project_to_delete = Project[project_id]
+        '''teams müssen vorab gelöscht werden, da in der Person-Entity im Feld "teams_of_dispatcher"
+        cascade_delete wegen Sicherheitsgründen auf False gestellt ist.'''
+        for team in project_to_delete.teams:
+            team.delete()
         project_to_delete.delete()
         return pm.Project.from_orm(project_to_delete)
 
