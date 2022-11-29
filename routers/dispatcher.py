@@ -11,8 +11,7 @@ from databases.services import (create_new_plan_period,
                                 make_person__actor_of_team, get_teams_of_dispatcher, get_planperiods_of_team,
                                 update_1_planperiod, delete_planperiod_from_team)
 from oauth2_authentication import (verify_supervisor_username, verify_supervisor_password, create_access_token,
-                                   verify_access_token, verify_su_access_token,
-                                   get_current_dispatcher, verify_dispatcher_username, verify_user_password)
+                                   verify_access_token, verify_su_access_token, verify_dispatcher_username, verify_user_password)
 from utilities import utils
 
 router = APIRouter(prefix='/dispatcher', tags=['Dispatcher'])

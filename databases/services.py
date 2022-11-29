@@ -251,6 +251,13 @@ def create_account(project: pm.ProjectCreate, person: pm.PersonCreate):
         return {'admin': pm.PersonShow.from_orm(new_person), 'password': password}
 
 
+def delete_a_account(project_id: UUID):
+    with db_session:
+        project_to_delete = Project[project_id]
+        project_to_delete.delete()
+        return pm.Project.from_orm(project_to_delete)
+
+
 def create_new_plan_period(team_id: str, date_start: datetime.date | None, date_end: datetime.date,
                            deadline: datetime.date, notes: str):
     with db_session:

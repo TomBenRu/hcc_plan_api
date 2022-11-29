@@ -8,7 +8,7 @@ from databases.enums import AuthorizationTypes
 import databases.pydantic_models as pm
 from databases.services import find_user_by_email, create_new_team, get_project_from_user_id, \
     get_all_persons, get_all_project_teams, create_person, update_all_persons_in_project, update_project_name, \
-    delete_person_from_project, delete_team_from_project
+    delete_person_from_project, delete_team_from_project, delete_a_account
 from oauth2_authentication import create_access_token, verify_admin_username, verify_access_token, verify_user_password
 
 router = APIRouter(prefix='/admin', tags=['Admin'])
@@ -157,3 +157,18 @@ def delete_team(access_token: str, team_id: str):
         return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                              detail=f'Fehler: {e}')
     return deleted_team
+
+
+@router.delete('/account')
+def delete_account(access_token: str, project_id: str):
+    try:
+        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
+    admin_id: UUID = token_data.id
+
+    try:
+        deleted_account = delete_a_account(project_id=UUID(project_id))
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail=f'Error: {e}')
+    return deleted_account

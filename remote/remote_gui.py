@@ -85,6 +85,15 @@ class MainFrame(ttk.Frame):
         self.wait_window(create_new_project)
         self.text_log.insert('end', f'-- {self.new_project_data}')
 
+    def delete_account(self):
+        self.text_log.insert('end', '- delete account\n')
+        access_token = self.logins['admin'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            return
+        DeleteAccount(self, access_token)
+
+
     def new_person(self):
         self.text_log.insert('end', '- new person\n')
         access_token = self.logins['admin'].access_token
@@ -411,6 +420,55 @@ class CreateNewProject(CommonTopLevel):
                                        'access_token': token.dict()})
         self.parent.new_project_data = response.json()
         self.destroy()
+
+
+class DeleteAccount(CommonTopLevel):
+    def __init__(self, parent, access_token: str):
+        super().__init__(parent)
+
+        self.parent = parent
+        self.access_token = access_token
+
+        self.project = self.get_project()
+
+        self.lb_delete_advice = tk.Label(self.frame_input,
+                                         text=f'Sie sind im Begriff, ihren Account\nName: "{self.project.name}"\n'
+                                              f'zu löschen.\nEs werden dabei alle mit dem Account verbundenen Daten '
+                                              f'unwiederruflich gelöscht.\nWenn Sie dies möchten, geben Sie bitte '
+                                              f'in die nachstehenden Felder den Namen ihres Accounts sowie die\n'
+                                              f'ID: "{self.project.id}"\nein.',
+                                         justify='left', wraplength=350)
+        self.lb_delete_advice.pack()
+
+        self.frame_entrys = ttk.Frame(self.frame_input)
+        self.frame_entrys.pack()
+
+        self.lb_name = tk.Label(self.frame_entrys, text='Account-Name:')
+        self.lb_name.grid(row=0, column=0, sticky='w', pady=(10, 0))
+        self.entry_name = tk.Entry(self.frame_entrys, width=60)
+        self.entry_name.grid(row=1, column=0, sticky='w', pady=(0, 5))
+        self.lb_id = tk.Label(self.frame_entrys, text='Account-ID:')
+        self.lb_id.grid(row=2, column=0, sticky='w', pady=(5, 0))
+        self.entry_id = tk.Entry(self.frame_entrys, width=60)
+        self.entry_id.grid(row=3, column=0, sticky='w', pady=(0, 10))
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='Löschen', width=20)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 5))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=20, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
+
+
+
+
+    def get_project(self):
+        response = requests.get(f'{self.parent.host}/admin/project', params={'access_token': self.access_token})
+        try:
+            project = pm.Project.parse_obj(response.json())
+            print(project)
+            return project
+        except Exception as e:
+            tk.messagebox.showerror(parent=self, message=f'{response.text}\nFehler: {e}')
+            return
 
 
 class ChangeProjectName(CommonTopLevel):
@@ -1233,6 +1291,7 @@ class MainMenu(tk.Menu):
         self.admin.add_command(label='Team löschen...', command=parent.delete_team)
         self.admin.add_command(label='Mitarbeiter löschen...', command=parent.delete_person)
         self.admin.add_command(label='Projektname ändern...', command=parent.change_project_name)
+        self.admin.add_command(label='Account löschen...', command=parent.delete_account)
 
         self.dispatcher.add_command(label='Neue Planperiode...', command=parent.new_planperiod)
         self.dispatcher.add_command(label='Planperiode ändern...', command=parent.change_planperiod)

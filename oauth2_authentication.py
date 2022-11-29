@@ -71,23 +71,6 @@ def get_current_user_cookie(request: Request, token_key: str, authorization: Aut
     return verify_access_token(token, authorization)
 
 
-def get_current_supervisor(token: str = Depends(oauth2_scheme_su)):
-    print('##############################')
-    return verify_access_token(token)
-
-
-def get_current_admin(token: str = Depends(oauth2_scheme_admin)):
-    return verify_access_token(token)
-
-
-def get_current_dispatcher(token: str = Depends(oauth2_scheme_dispatcher)):
-    return verify_access_token(token)
-
-
-def get_current_actor(token: str = Depends(oauth2_scheme_actor)):
-    return verify_access_token(token)
-
-
 def verify_supervisor_username(username: str):
     if username == SUPERVISOR_USERNAME:
         return True
