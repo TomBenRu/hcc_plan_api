@@ -22,6 +22,10 @@
         border-collapse: collapse;
         background-color: #EEEEEE;
         }
+.text_area {
+        margin-top: 5px;
+        width: -moz-available;
+        }
 th, td {
         font: bold 1em Helvetica, sans-serif;
         border: thin solid;
