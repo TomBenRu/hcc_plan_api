@@ -3,13 +3,13 @@
 }
 
 .drop_v {
-            background-color:blue;
+            background-color:rgba(0, 0, 255, 0.5);
         }
 .drop_n {
-            background-color:orange;
+            background-color:rgba(255, 166, 0, 0.5);
         }
 .drop_g {
-            background-color:green;
+            background-color:rgba(0, 128, 0, 0.5);
         }
 .grid_center {
         display: grid;
