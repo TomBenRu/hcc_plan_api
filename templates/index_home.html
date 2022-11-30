@@ -8,6 +8,9 @@
     <a href="{{ url_for('logout') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Logout</a>
 {% endblock %}
 {% block navbar_small_items %}
+    <a href="{{ url_for('actor_plan_periods') }}" class="w3-bar-item w3-button w3-padding-large">Eingabe Spieloptionen</a>
+    <a href="{{ url_for('account_settings') }}" class="w3-bar-item w3-button w3-padding-large">Einstellungen</a>
+    <a href="{{ url_for('logout') }}" class="w3-bar-item w3-button w3-padding-large">Logout</a>
 {% endblock %}
 {% block cont_header %}
 <h1 class="w3-margin w3-jumbo">{{ name_project }}</h1>
