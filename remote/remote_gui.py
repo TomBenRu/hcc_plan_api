@@ -6,7 +6,6 @@ import tkinter as tk
 import tkinter.messagebox
 import tkinter.ttk as ttk
 from typing import Literal, Optional
-from uuid import UUID
 
 import requests
 import tkcalendar
@@ -14,7 +13,7 @@ from pydantic import EmailStr, BaseModel
 
 import databases.pydantic_models as pm
 from remote.tools import PlaceholderEntry
-from utilities.progressbars import ProgressIndeterm
+from remote.progressbars import ProgressIndeterm
 
 local = True
 

@@ -6,6 +6,7 @@ class ProgressIndeterm(tk.Toplevel):
     def __init__(self, parent, lb_text='Emails werden gesendet...', progress_color=None):
         super().__init__(parent)
         self.grab_set()
+        self.focus_set()
         self.wm_overrideredirect(True)
 
         self.style = ttk.Style()

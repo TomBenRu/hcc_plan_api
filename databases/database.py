@@ -10,7 +10,7 @@ from .enum_converter import EnumConverter
 
 
 # zum Deployen müssen server_remote_access, local und from_outside False sein
-server_remote_acces = False
+server_remote_acces = True
 local = False  # True: sqlite-database, False: postgresql-database
 from_outside = False  # False: calling database from same API
 
