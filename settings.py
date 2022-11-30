@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     send_address: str
     send_password: str
     post_ausg_server: str
-    port: int
+    send_port: int
 
     class Config:
         env_file = '.env'
