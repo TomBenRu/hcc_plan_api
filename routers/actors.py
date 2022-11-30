@@ -57,28 +57,28 @@ async def actor_plan_periods_handler(request: Request):
                                                'success': True})
 
 
-@router.get('/new_passwort')
-def send_new_password(request: Request, user_email: EmailStr):
-    print(f'{user_email = }')
-    try:
-        user = verify_actor_username(username=user_email)
-    except Exception as e:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Fehler1: {e}')
-    user_id = user.id
-
-    try:
-        project = get_project_from_user_id(user_id=user_id)
-    except Exception as e:
-        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler2: {e}')
-    try:
-        person, new_password = set_new_password(user_id=user_id)
-    except Exception as e:
-        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler3: {e}')
-    try:
-        send_mail.send_new_password(person=person, project=project.name, new_psw=new_password)
-    except Exception as e:
-        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler4: {e}')
-
-    return templates.TemplateResponse('index_new_passwort.html',
-                                      context={'request': request, 'name_project': project.name,
-                                               'f_name': person.f_name, 'l_name': person.l_name, 'email': person.email})
+# @router.get('/new_passwort')
+# def send_new_password(request: Request, user_email: EmailStr):
+#     print(f'{user_email = }')
+#     try:
+#         user = verify_actor_username(username=user_email)
+#     except Exception as e:
+#         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Fehler1: {e}')
+#     user_id = user.id
+#
+#     try:
+#         project = get_project_from_user_id(user_id=user_id)
+#     except Exception as e:
+#         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler2: {e}')
+#     try:
+#         person, new_password = set_new_password(user_id=user_id)
+#     except Exception as e:
+#         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler3: {e}')
+#     try:
+#         send_mail.send_new_password(person=person, project=project.name, new_psw=new_password)
+#     except Exception as e:
+#         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler4: {e}')
+#
+#     return templates.TemplateResponse('index_new_passwort.html',
+#                                       context={'request': request, 'name_project': project.name,
+#                                                'f_name': person.f_name, 'l_name': person.l_name, 'email': person.email})
