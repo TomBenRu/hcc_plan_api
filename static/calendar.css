@@ -13,6 +13,7 @@
         }
 .grid_center {
         display: grid;
+        padding-left: 20px;
         justify-content: start;
         align-items: center;
 }
