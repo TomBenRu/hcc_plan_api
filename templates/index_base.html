@@ -225,7 +225,8 @@
 
     <div class="container" style="background-color:#f1f1f1">
       <button type="button" onclick="document.getElementById('login01').style.display='none'" class="cancelbtn">Cancel</button>
-      <span class="psw">Forgot <a href="#">password?</a></span>
+      <span class="psw">Forgot <a href="#" id="forgotten_psw" onclick="get_url_for_new_psw()">password?</a></span>
+      <a id="blank_url_for_forgotten_psw" href="{{ url_for('send_new_password') }}"></a>
     </div>
   </form>
 </div>
@@ -245,6 +246,14 @@
 
 <script>
 {% block cont_script %}
+function get_url_for_new_psw() {
+  console.log("Hallo!");
+  var param = document.getElementById("uname").value;
+  console.log(param)
+  var url_to_go = document.getElementById("blank_url_for_forgotten_psw").getAttribute("href").concat("?user_email=").concat(param);
+  console.log(url_to_go);
+  document.getElementById("forgotten_psw").setAttribute("href", url_to_go);
+}
 // Used to toggle the menu on small screens when clicking on the menu button
 function myFunction() {
   var x = document.getElementById("navDemo");
@@ -254,6 +263,7 @@ function myFunction() {
     x.className = x.className.replace(" w3-show", "");
   }
 }
+  
 // Get the modal
 var modal = document.getElementById('login01');
 

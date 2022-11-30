@@ -1,0 +1,22 @@
+{% extends "index_base.html" %}
+{% block links %}
+    {{ super() }}
+{% endblock %}
+{% block menu_bar_items %}
+{% endblock %}
+{% block navbar_small_items %}
+{% endblock %}
+{% block cont_header %}
+<h1 class="w3-margin w3-jumbo">{{ name_project }}</h1>
+  <p class="w3-xlarge">Hallo {{ f_name }} {{ l_name }}.</p>
+{% endblock %}
+{% block cont_main %}
+<div class="w3-container w3-padding-64 w3-center">
+<p class="w3-large">Dein neues Passwort wurde an die Email-Adresse</p> 
+<p class="w3-xlarge">{{ email }}</p>
+<p class="w3-large">geschickt.</p>
+<p class="w3-large">Logge dich mit diesem Passwort ein und ändere es nach Bedarf.</p>
+</div>
+{% endblock %}
+{% block quote_of_day %}
+{% endblock %}

@@ -30,6 +30,15 @@ def create_person(admin_id: UUID, person: pm.PersonCreate):
         return {'person': pm.PersonShow.from_orm(new_person), 'password': password}
 
 
+def set_new_password(user_id: UUID):
+    new_psw = secrets.token_urlsafe(8)
+    hashed_psw = utils.hash_psw(new_psw)
+    with db_session:
+        person_db = Person[user_id]
+        person_db.password = hashed_psw
+        return pm.Person.from_orm(person_db), new_psw
+
+
 def delete_person_from_project(person_id: UUID):
     with db_session:
         person_to_delete = Person[person_id]
