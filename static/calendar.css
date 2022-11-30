@@ -13,7 +13,7 @@
         }
 .grid_center {
         display: grid;
-        justify-content: center;
+        justify-content: start;
         align-items: center;
 }
 .calendar_table {
