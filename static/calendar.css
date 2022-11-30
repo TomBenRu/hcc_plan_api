@@ -20,6 +20,8 @@
         font: 1em Helvetica, sans-serif;
         border-collapse: collapse;
         background-color: #EEEEEE;
+        overflow-x: auto;
+        display: block;
         }
 th, td {
         font: bold 1em Helvetica, sans-serif;
