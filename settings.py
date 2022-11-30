@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     database_sql: str
     password_sql: str
 
+    # to send emails
+    send_address: str
+    send_password: str
+    post_ausg_server: str
+    port: int
+
     class Config:
         env_file = '.env'
 

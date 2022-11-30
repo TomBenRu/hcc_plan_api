@@ -2,11 +2,12 @@ from email.message import EmailMessage
 import smtplib
 
 import databases.pydantic_models as pm
+from settings import settings
 
-SEND_ADDRESS = 'hcc-dispo@thomas-ruff.de'
-SEND_PASSWORD = 'jzE5X0bvSVvUD2RhPVzW'
-POST_AUSG_SERVER = 'smtp.1und1.de'
-PORT = 587
+SEND_ADDRESS = settings.send_address
+SEND_PASSWORD = settings.send_password
+POST_AUSG_SERVER = settings.post_ausg_server
+PORT = settings.port
 
 
 def send_new_password(person: pm.Person, project: str, new_psw: str):
