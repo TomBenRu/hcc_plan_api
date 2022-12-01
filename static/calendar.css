@@ -11,6 +11,12 @@
 .drop_g {
             background-color:rgba(0, 128, 0, 0.5);
         }
+.wrapper {
+        display: grid;
+        grid-template-columns: auto 300px;
+        column-gap: 10px;
+        }
+              
 .grid_center {
         display: grid;
         padding-left: 20px;

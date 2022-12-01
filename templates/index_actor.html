@@ -38,16 +38,19 @@
 {% block cont_main %}
 <form method="post" action="{{ url_for('actor_plan_periods_handler') }}" id="form1" class="grid_center">
     {% for planung_filled_in in plan_periods %}
+    
         {% set plan_period = planung_filled_in.plan_period %}
         {% set avail_days = plan_period.avail_days(actor_id) %}
         {% set deadline = plan_period.deadline %}
         <br id="pp-{{plan_period.start}}" style="margin-bottom: 50px">
+        <div class="wrapper">
         <div class="w3-container w3-dark-grey w3-center" style="position: relative; margin-top: 20px!important; margin-bottom: 0px">
             <div style="position: absolute; top: 0; right: 5px; color: #d4ff95">
                 Deadline: {{deadline.day}}.{{deadline.month}}.{{deadline.year}}
             </div>
             <h2>vom {{ plan_period.start.day }}.{{ plan_period.start.month }}.{{ plan_period.start.year }} - {{ plan_period.end.day }}.{{ plan_period.end.month }}.{{ plan_period.end.year }}</h2>
         </div>
+        <div></div>
         <table class="calendar_table" id="period_{{plan_period.id}}">
             <tr>
                 <td></td>
@@ -89,6 +92,11 @@
             {% endfor %}
 
         </table>
+        <div>
+        <p class="w3-large">Wichtige Mitteilungen:</p>
+        <p class="w3-medium">{{ plan_period.notes }}</p>
+        </div>
+        </div>
         <div style="margin-top: 10px">
             <label for="ta{{plan_period.id}}">zusätzliche Angaben:</label>
             <br>
