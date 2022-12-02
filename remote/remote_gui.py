@@ -177,12 +177,8 @@ class MainFrame(ttk.Frame):
         self.text_log.insert('end', '- get all clowns\n')
         if not (access_token := self.logins['dispatcher'].access_token):
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
-        response = requests.get(f'{self.host}/dispatcher/actors', params={'access_token': access_token})
-        persons: list[pm.Person] = response.json()
-        if type(persons) == dict and persons.get('status_code') == 401:
-            tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
-            return
-        self.text_log.insert('end', f'-- {response.text}\n')
+        persons = HelperRequests.get_all_actors(self, self.host, access_token)
+        self.text_log.insert('end', f'-- {persons}\n')
         self.all_actors = persons
 
     def get_avail_days(self):
