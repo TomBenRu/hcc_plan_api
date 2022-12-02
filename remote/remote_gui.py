@@ -92,7 +92,6 @@ class MainFrame(ttk.Frame):
             return
         DeleteAccount(self, access_token)
 
-
     def new_person(self):
         self.text_log.insert('end', '- new person\n')
         access_token = self.logins['admin'].access_token
@@ -179,23 +178,19 @@ class MainFrame(ttk.Frame):
         if not (access_token := self.logins['dispatcher'].access_token):
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
         response = requests.get(f'{self.host}/dispatcher/actors', params={'access_token': access_token})
-        data = response.json()
-        if type(data) == dict and data.get('status_code') == 401:
+        persons: list[pm.Person] = response.json()
+        if type(persons) == dict and persons.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
             return
         self.text_log.insert('end', f'-- {response.text}\n')
-        self.all_actors = data
+        self.all_actors = persons
 
     def get_avail_days(self):
         access_token = self.logins['dispatcher'].access_token
         if not access_token:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
             return
-        self.get_all_actors()
         self.text_log.insert('end', f'- get avail_days\n')
-        if not self.all_actors:
-            tk.messagebox.showerror(parent=self, message='Sie müssen zuerst alle Clowns importieren.')
-            return
         get_av_days = GetAvailDays(self, self.host, access_token)
         self.wait_window(get_av_days)
 
@@ -205,6 +200,20 @@ class MainFrame(ttk.Frame):
         self.text_log.insert('end', '- login\n')
 
         Login(self)
+
+
+class HelperRequests:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def get_all_actors(cls, parent, host: str, access_token: str) -> list[pm.Person]:
+        response = requests.get(f'{host}/dispatcher/actors', params={'access_token': access_token})
+        try:
+            persons: list[pm.Person] = [pm.Person.parse_obj(p) for p in response.json()]
+            return persons
+        except Exception as e:
+            tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
 
 
 class CommonTopLevel(tk.Toplevel):
@@ -1013,7 +1022,8 @@ class GetAvailDays(tk.Toplevel):
 
         self.frame_main = ttk.Frame(self, padding='20 20 20 20')
         self.frame_main.pack()
-        self.all_actors = {f'{a["f_name"]}, {a["l_name"]}': a['id'] for a in self.parent.all_actors}
+        self.all_actors = {f'{a.f_name}, {a.l_name}': str(a.id)
+                           for a in HelperRequests.get_all_actors(self, self.host, self.access_token)}
         self.all_actors['allen Clowns'] = '-1'
         self.lb_combo_all_actors = tk.Label(self.frame_main, text='Spieloptionen von...')
         self.lb_combo_all_actors.grid(row=0, column=0, padx=(0, 5))
@@ -1039,10 +1049,11 @@ class GetAvailDays(tk.Toplevel):
                     response = requests.get(f'{self.host}/dispatcher/avail_days',
                                             params={'access_token': self.access_token, 'actor_id': actor_id})
                     data = response.json()
-                    if type(data) == dict and data.get('status_code') == 401:
-                        tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
-                        self.destroy()
-                    available_days[actor_id] = response.json()
+                    try:
+                        avail_days = [pm.AvailDay.parse_obj(ad) for ad in data]
+                        available_days[actor_id] = avail_days
+                    except Exception as e:
+                        tk.messagebox.showerror(parent=self, message=f'Fehler: {response.text} - {e}')
                 self.parent.avail_days = available_days
 
                 tk.messagebox.showinfo(parent=self, message='avail_days downloaded.')

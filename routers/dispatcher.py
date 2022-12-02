@@ -168,7 +168,7 @@ def get_avail_days(access_token: str, actor_id: str):
     try:
         token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
     except Exception as e:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='wrong cedentials')
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials - {e}')
     user_id = token_data.id
     avail_days = get_avail_days_from_actor(actor_id=user_id)
     return avail_days

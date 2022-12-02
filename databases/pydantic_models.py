@@ -158,7 +158,7 @@ class AvailDay(AvailDayCreate):
     created_at: date
     last_modified: datetime
     time_of_day: TimeOfDay
-    availables: Availables
+    # availables: Availables
 
 
 class AvailDayShow(AvailDay):
