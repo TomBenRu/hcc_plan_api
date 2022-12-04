@@ -211,6 +211,25 @@ class HelperRequests:
         except Exception as e:
             tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
 
+    @classmethod
+    def get_teams(cls, parent, host: str, dispatcher_access_token: str):
+        response = requests.get(f'{host}/dispatcher/teams',
+                                params={'access_token': dispatcher_access_token})
+        try:
+            return sorted([pm.Team(**t) for t in response.json()], key=lambda t: t.name)
+        except Exception as e:
+            tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
+
+    @classmethod
+    def get_planperiods(cls, parent, host: str, dispatcher_access_token: str, team_id: str):
+        response = requests.get(f'{host}/dispatcher/planperiods',
+                                params={'access_token': dispatcher_access_token, 'team_id': team_id})
+        try:
+            planperiods = sorted([pm.PlanPeriod(**pp) for pp in response.json()], key=lambda v: v.start, reverse=True)
+            return planperiods
+        except Exception as e:
+            tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
+
 
 class CommonTopLevel(tk.Toplevel):
     def __init__(self, parent):
@@ -883,7 +902,8 @@ class ChangePlanPeriod(CommonTopLevel):
         self.var_chk_closed = tk.BooleanVar()
         self.var_combo_planperiods = tk.StringVar()
         self.var_combo_teams = tk.StringVar()
-        self.values_combo_teams = {t.name: str(t.id) for t in self.get_teams()}
+        self.values_combo_teams = {t.name: str(t.id)
+                                   for t in HelperRequests.get_teams(self, parent.host, self.access_token)}
         self.values_combo_planperiods: dict[str, pm.PlanPeriod] = {}
 
         self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Team')
@@ -955,7 +975,8 @@ class ChangePlanPeriod(CommonTopLevel):
 
     def autofill(self, box: Literal['team', 'planperiod']):
         if box == 'team':
-            planperiods = self.get_planperiods()
+            team_id = self.values_combo_teams[self.var_combo_teams.get()]
+            planperiods = HelperRequests.get_planperiods(self, self.parent.host, self.access_token, team_id)
             self.values_combo_planperiods = {f'{pp.start.strftime("%d.%m.%y")} - {pp.end.strftime("%d.%m.%y")}': pp
                                              for pp in planperiods}
             self.combo_planperiods.config(values=list(self.values_combo_planperiods))
@@ -988,77 +1009,63 @@ class ChangePlanPeriod(CommonTopLevel):
             self.text_notes.delete(1.0, 'end')
             self.text_notes.insert(1.0, notes)
 
-    def get_planperiods(self):
-        team_id = self.values_combo_teams[self.var_combo_teams.get()]
-        response = requests.get(f'{self.parent.host}/dispatcher/planperiods',
-                                params={'access_token': self.access_token, 'team_id': team_id})
-        planperiods = sorted([pm.PlanPeriod(**pp) for pp in response.json()], key=lambda v: v.start, reverse=True)
-        return planperiods
 
-    def get_teams(self):
-        response = requests.get(f'{self.parent.host}/dispatcher/teams',
-                                params={'access_token': self.access_token})
-        return sorted([pm.Team(**t) for t in response.json()], key=lambda t: t.name)
-
-
-class GetAvailDays(tk.Toplevel):
+class GetAvailDays(CommonTopLevel):
     def __init__(self, parent, host: str, access_token: str):
         super().__init__(parent)
-        self.grab_set()
-        self.focus_set()
-        self.bind('<Escape>', lambda e: self.destroy())
 
-        self.parent = parent
         self.host = host
 
         self.access_token = access_token
-        if not self.access_token:
-            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
+
+        self.all_teams_dict = {t.name: t for t in sorted(HelperRequests.get_teams(self, host, access_token),
+                                                         key=lambda t: t.name)}
+        self.all_planperiods = {}
+
+        self.var_combo_teams = tk.StringVar()
+        self.var_combo_planperiods = tk.StringVar()
+
+        self.frame_combo_select.config(padding='20 20 20 20')
+
+        self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Auswahl Team:')
+        self.lb_combo_teams.grid(row=0, column=0, sticky='w')
+        self.combo_teams = ttk.Combobox(self.frame_combo_select, values=list(self.all_teams_dict),
+                                        textvariable=self.var_combo_teams)
+        self.combo_teams.bind('<<ComboboxSelected>>', lambda event: self.autofill_planperiods())
+        self.combo_teams.grid(row=1, column=0, sticky='w', padx=(0, 5))
+        self.lb_combo_planperiods = tk.Label(self.frame_combo_select, text='Auswahl Planperiode:')
+        self.lb_combo_planperiods.grid(row=0, column=1, sticky='w')
+        self.combo_planperiods = ttk.Combobox(self.frame_combo_select, textvariable=self.var_combo_planperiods)
+        self.combo_planperiods.grid(row=1, column=1, sticky='w', padx=(5, 0))
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=15, command=self.get_avail_days)
+        self.bt_ok.grid(row=0, column=0, padx=(0, 5), pady=(10, 0))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=15, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, padx=(5, 0), pady=(10, 0))
+
+    def get_avail_days(self):
+        planperiod_id = self.all_planperiods[self.var_combo_planperiods.get()].id
+        response = requests.get(f'{self.host}/dispatcher/avail_days',
+                                params={'access_token': self.access_token, 'planperiod_id': planperiod_id})
+        avail_days = response.json()
+        try:
+            avail_days = {person_id: [pm.AvailDay.parse_obj(ad) for ad in av_days]
+                          for person_id, av_days in avail_days.items()}
+            self.parent.avail_days = avail_days
             self.destroy()
+        except Exception as e:
+            tk.messagebox.showinfo(parent=self, message=f'Fehler {response.json()}\nException {e}')
+        self.destroy()
 
-        self.frame_main = ttk.Frame(self, padding='20 20 20 20')
-        self.frame_main.pack()
-        self.all_actors = {f'{a.f_name}, {a.l_name}': str(a.id)
-                           for a in HelperRequests.get_all_actors(self, self.host, self.access_token)}
-        self.all_actors['allen Clowns'] = '-1'
-        self.lb_combo_all_actors = tk.Label(self.frame_main, text='Spieloptionen von...')
-        self.lb_combo_all_actors.grid(row=0, column=0, padx=(0, 5))
-        self.var_combo_all_actors = tk.StringVar(value='allen Clowns')
-        self.combo_all_actors = ttk.Combobox(self.frame_main, values=list(self.all_actors.keys()),
-                                             textvariable=self.var_combo_all_actors)
-        self.combo_all_actors.grid(row=0, column=1, padx=(5, 0))
-
-        self.bt_ok = tk.Button(self.frame_main, text='okay', width=15, command=self.save_avail_days)
-        self.bt_ok.grid(row=1, column=0, padx=(0, 5), pady=(10, 0))
-        self.bt_cancel = tk.Button(self.frame_main, text='cancel', width=15, command=self.destroy)
-        self.bt_cancel.grid(row=1, column=1, padx=(5, 0), pady=(10, 0))
-
-    def save_avail_days(self):
-        connection_error = None
-        t0 = time.time()
-        actor_ids = (list(self.all_actors.values())[:-1] if self.all_actors.get(self.var_combo_all_actors.get()) == '-1'
-                     else [self.all_actors[self.var_combo_all_actors.get()]])
-        while time.time() - t0 < 30:
-            try:
-                available_days = {}
-                for actor_id in actor_ids:
-                    response = requests.get(f'{self.host}/dispatcher/avail_days',
-                                            params={'access_token': self.access_token, 'actor_id': actor_id})
-                    data = response.json()
-                    try:
-                        avail_days = [pm.AvailDay.parse_obj(ad) for ad in data]
-                        available_days[actor_id] = avail_days
-                    except Exception as e:
-                        tk.messagebox.showerror(parent=self, message=f'Fehler: {response.text} - {e}')
-                self.parent.avail_days = available_days
-
-                tk.messagebox.showinfo(parent=self, message='avail_days downloaded.')
-                self.destroy()
-                return
-            except ConnectionError as e:
-                connection_error = e
-                time.sleep(0.2)
-        raise connection_error
+    def autofill_planperiods(self):
+        team = self.all_teams_dict[self.var_combo_teams.get()]
+        planperiods = sorted(HelperRequests.get_planperiods(self.parent, self.host, self.access_token, team.id),
+                             key=lambda pp: pp.start)
+        self.all_planperiods = {f'{pp.start.strftime("%d.%m.%y")} - {pp.end.strftime("%d.%m.%y")}': pp
+                                for pp in planperiods}
+        values = list(self.all_planperiods)
+        self.combo_planperiods.config(values=values)
+        self.var_combo_planperiods.set(values[0])
 
 
 class CreateTeam(CommonTopLevel):
@@ -1166,13 +1173,7 @@ class CreatePlanperiod(tk.Toplevel):
         self.get_teams_and_mindates()
 
     def get_teams_and_mindates(self):
-        response = requests.get(f'{self.host}/dispatcher/teams',
-                                params={'access_token': self.access_token})
-        data = response.json()
-        if type(data) == dict and data.get('status_code') == 401:
-            tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
-            self.destroy()
-        self.teams = [pm.TeamShow(**team) for team in data]
+        self.teams = HelperRequests.get_teams(self, self.host, self.access_token)
         self.values_combo_teams = {team.name: team.id for team in self.teams}
         self.var_combo_teams.set(self.teams[0].name)
         self.combo_teams.config(values=list(self.values_combo_teams))
@@ -1224,7 +1225,8 @@ class DeletePlanperiod(CommonTopLevel):
 
         self.var_combo_planperiods = tk.StringVar()
         self.var_combo_teams = tk.StringVar()
-        self.values_combo_teams = {t.name: str(t.id) for t in self.get_teams()}
+        self.values_combo_teams = {t.name: str(t.id)
+                                   for t in HelperRequests.get_teams(self, parent.host, self.access_token)}
         self.values_combo_planperiods: dict[str, pm.PlanPeriod] = {}
 
         self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Team')
@@ -1267,20 +1269,9 @@ class DeletePlanperiod(CommonTopLevel):
             tk.messagebox.showinfo(parent=self, message=f'Fehler: {response.json()}\n Exception: {e}')
             self.destroy()
 
-    def get_planperiods(self):
-        team_id = self.values_combo_teams[self.var_combo_teams.get()]
-        response = requests.get(f'{self.parent.host}/dispatcher/planperiods',
-                                params={'access_token': self.access_token, 'team_id': team_id})
-        planperiods = sorted([pm.PlanPeriod(**pp) for pp in response.json()], key=lambda v: v.start, reverse=True)
-        return planperiods
-
-    def get_teams(self):
-        response = requests.get(f'{self.parent.host}/dispatcher/teams',
-                                params={'access_token': self.access_token})
-        return sorted([pm.Team(**t) for t in response.json()], key=lambda t: t.name)
-
     def autofill(self):
-        planperiods = self.get_planperiods()
+        team_id = self.values_combo_teams[self.var_combo_teams.get()]
+        planperiods = HelperRequests.get_planperiods(self, self.parent.host, self.access_token, team_id)
         self.values_combo_planperiods = {f'{pp.start.strftime("%d.%m.%y")} - {pp.end.strftime("%d.%m.%y")}': pp
                                          for pp in planperiods}
         self.combo_planperiods.config(values=list(self.values_combo_planperiods))

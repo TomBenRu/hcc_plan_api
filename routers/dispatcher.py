@@ -6,10 +6,10 @@ from fastapi import APIRouter, HTTPException, status, Request, Depends
 from databases.enums import AuthorizationTypes
 import databases.pydantic_models as pm
 from databases.services import (create_new_plan_period,
-                                change_status_planperiod, get_actors_in_dispatcher_teams, get_avail_days_from_actor,
+                                change_status_planperiod, get_actors_in_dispatcher_teams,
                                 get_planperiods_last_recent_date, get_project_from_user_id,
                                 make_person__actor_of_team, get_teams_of_dispatcher, get_planperiods_of_team,
-                                update_1_planperiod, delete_planperiod_from_team)
+                                update_1_planperiod, delete_planperiod_from_team, get_avail_days_from_planperiod)
 from oauth2_authentication import (verify_supervisor_username, verify_supervisor_password, create_access_token,
                                    verify_access_token, verify_su_access_token, verify_dispatcher_username, verify_user_password)
 from utilities import utils
@@ -164,12 +164,12 @@ def get_clowns(access_token: str):
 
 
 @router.get('/avail_days')
-def get_avail_days(access_token: str, actor_id: str):
+def get_avail_days(access_token: str, planperiod_id: str):
     try:
         token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials - {e}')
     user_id = token_data.id
-    avail_days = get_avail_days_from_actor(actor_id=user_id)
+    avail_days = get_avail_days_from_planperiod(planperiod_id=UUID(planperiod_id))
     return avail_days
 

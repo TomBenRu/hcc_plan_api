@@ -226,11 +226,12 @@ def get_actors_in_dispatcher_teams(dispatcher_id: UUID) -> list[pm.Person]:
         return [pm.Person.from_orm(p) for p in Person[dispatcher_id].teams_of_dispatcher.actors]
 
 
-def get_avail_days_from_actor(actor_id: UUID) -> list[pm.AvailDay]:
+def get_avail_days_from_planperiod(planperiod_id: UUID) -> dict[UUID, list[pm.AvailDay]]:
     with db_session:
-        available_days = [ad for ad in list(Person[actor_id].availabless.avail_days)
-                          if not ad.availables.plan_period.closed]
-        return [pm.AvailDay.from_orm(ad) for ad in available_days]
+        availabless = list(PlanPeriod[planperiod_id].availabless)
+        avail_days = {availables.person.id: [pm.AvailDay.from_orm(av_d) for av_d in list(availables.avail_days)]
+                      for availables in availabless}
+        return avail_days
 
 
 def create_new_team(team: pm.TeamCreate, person_id: str):
