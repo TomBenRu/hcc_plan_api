@@ -24,6 +24,9 @@ class Project(db_actors.Entity):
     def teams(self):
         return self.persons.teams_of_dispatcher
 
+    def before_update(self):
+        self.last_modified = datetime.utcnow()
+
 
 class Person(db_actors.Entity):
     id = PrimaryKey(UUID, auto=True)
@@ -51,6 +54,7 @@ class Person(db_actors.Entity):
             for availables in self.availabless:
                 if not availables.plan_period.closed:
                     availables.delete()
+        self.last_modified = datetime.utcnow()
 
 
 class Team(db_actors.Entity):
@@ -68,7 +72,12 @@ class Team(db_actors.Entity):
 
     def before_insert(self):
         if list(self.project.teams.name).count(self.name) > 1:
-            raise CustomError(f'A Team named {self.name} is allready in your Project.')
+            raise CustomError(f'A Team named "{self.name}" is allready in your Project.')
+
+    def before_update(self):
+        if list(self.project.teams.name).count(self.name) > 1:
+            raise CustomError(f'A Team named "{self.name}" is allready in your Project.')
+        self.last_modified = datetime.utcnow()
 
 
 class Availables(db_actors.Entity):
@@ -114,6 +123,7 @@ class PlanPeriod(db_actors.Entity):
             for avail_day in self.avail_days:
                 if avail_day.day < self.start or avail_day.day > self.end:
                     avail_day.delete()
+        self.last_modified = datetime.utcnow()
 
 
 class AvailDay(db_actors.Entity):

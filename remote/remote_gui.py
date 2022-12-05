@@ -1189,7 +1189,7 @@ class CreateTeam(CommonTopLevel):
         try:
             team = pm.Team.parse_obj(data)
         except Exception as e:
-            tk.messagebox.showerror(parent=self, message=f'{response.text}, Fehler: {e}')
+            tk.messagebox.showerror(parent=self, message=f'{response.text}')
             return
         self.parent.new_team_data = team
         self.destroy()
