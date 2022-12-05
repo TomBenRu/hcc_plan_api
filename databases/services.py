@@ -46,6 +46,13 @@ def delete_person_from_project(person_id: UUID):
         return pm.Person.from_orm(person_to_delete)
 
 
+def update_team_from_project(team_id: UUID, new_team_name: str):
+    with db_session:
+        team_to_update = Team[team_id]
+        team_to_update.name = new_team_name
+        return pm.Team.from_orm(team_to_update)
+
+
 def delete_team_from_project(team_id: UUID):
     with db_session:
         team_to_delete = Team[team_id]

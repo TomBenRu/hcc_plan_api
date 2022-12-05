@@ -38,6 +38,7 @@ class MainFrame(ttk.Frame):
         self.new_project_data: dict | None = None
         self.new_person_data: dict | None = None
         self.new_team_data: dict | None = None
+        self.changed_team: pm.Team | None = None
         self.all_actors: list[dict[str, str]] | None = None
         self.avail_days = {}
         self.planperiod = None
@@ -114,6 +115,16 @@ class MainFrame(ttk.Frame):
         create_team = CreateTeam(self, access_token)
         self.wait_window(create_team)
         self.text_log.insert('end', f'-- {self.new_team_data}\n')
+
+    def change_team(self):
+        access_token = self.logins['admin'].access_token
+        if not access_token:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            return
+        self.text_log.insert('end', '- change team\n')
+        change_team = ChangeTeam(self, access_token)
+        self.wait_window(change_team)
+        self.text_log.insert('end', f'-- {self.changed_team}\n')
 
     def delete_team(self):
         access_token = self.logins['admin'].access_token
@@ -218,13 +229,24 @@ class HelperRequests:
             tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
 
     @classmethod
-    def get_teams(cls, parent, host: str, dispatcher_access_token: str):
+    def get_teams_dispatcher(cls, parent, host: str, dispatcher_access_token: str):
         response = requests.get(f'{host}/dispatcher/teams',
                                 params={'access_token': dispatcher_access_token})
         try:
             return sorted([pm.Team(**t) for t in response.json()], key=lambda t: t.name)
         except Exception as e:
             tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
+
+    @staticmethod
+    def get_teams_admin(parent, host: str, admin_access_token):
+        response = requests.get(f'{host}/admin/teams',
+                                params={'access_token': admin_access_token})
+        data = response.json()
+        try:
+            teams = [pm.Team.parse_obj(team) for team in data]
+            return teams
+        except:
+            tk.messagebox.showerror(parent=parent, message=f'{response.text}')
 
     @classmethod
     def get_planperiods(cls, parent, host: str, dispatcher_access_token: str, team_id: str):
@@ -872,7 +894,7 @@ class DeleteTeam(CommonTopLevel):
 
         self.var_combo_teams = tk.StringVar()
 
-        self.lb_combo_teams = tk.Label(self.frame_input, text='Mitarbeiter:in:')
+        self.lb_combo_teams = tk.Label(self.frame_input, text='Auswahl Team:')
         self.lb_combo_teams.grid(row=0, column=0, sticky='e', padx=(0, 0), pady=(0, 5))
         self.combo_teams = ttk.Combobox(self.frame_input, values=list(self.all_teams_dict_for_combo),
                                         textvariable=self.var_combo_teams, state='readonly')
@@ -905,14 +927,7 @@ class DeleteTeam(CommonTopLevel):
             self.destroy()
 
     def get_teams(self):
-        response = requests.get(f'{self.parent.host}/admin/teams',
-                                params={'access_token': self.access_token})
-        data = response.json()
-        if type(data) == dict and data.get('status_code') == 401:
-            tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
-            self.destroy()
-
-        return sorted([pm.Team(**team) for team in data], key=lambda t: t.name)
+        return sorted(HelperRequests.get_teams_admin(self, self.parent.host, self.access_token), key=lambda t: t.name)
 
 
 class DeletePerson(CommonTopLevel):
@@ -980,7 +995,7 @@ class ChangePlanPeriod(CommonTopLevel):
         self.var_combo_planperiods = tk.StringVar()
         self.var_combo_teams = tk.StringVar()
         self.values_combo_teams = {t.name: str(t.id)
-                                   for t in HelperRequests.get_teams(self, parent.host, self.access_token)}
+                                   for t in HelperRequests.get_teams_dispatcher(self, parent.host, self.access_token)}
         self.values_combo_planperiods: dict[str, pm.PlanPeriod] = {}
 
         self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Team')
@@ -1095,7 +1110,7 @@ class GetAvailDays(CommonTopLevel):
 
         self.access_token = access_token
 
-        self.all_teams_dict = {t.name: t for t in sorted(HelperRequests.get_teams(self, host, access_token),
+        self.all_teams_dict = {t.name: t for t in sorted(HelperRequests.get_teams_dispatcher(self, host, access_token),
                                                          key=lambda t: t.name)}
         self.all_planperiods = {}
 
@@ -1200,6 +1215,54 @@ class CreateTeam(CommonTopLevel):
         return all_persons
 
 
+class ChangeTeam(CommonTopLevel):
+    def __init__(self, parent, access_token: str):
+        super().__init__(parent)
+        self.frame_combo_select.config(padding='20 20 20 20')
+
+        self.access_token = access_token
+
+        self.var_combo_teams = tk.StringVar()
+        self.values_combo_teams = {t.name: t for t in
+                                   sorted(HelperRequests.get_teams_admin(parent, parent.host, access_token),
+                                          key=lambda t: t.name)}
+        self.var_combo_teams.set(list(self.values_combo_teams)[0])
+
+        self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Auswahl Team:')
+        self.lb_combo_teams.grid(row=0, column=0, sticky='w')
+        self.combo_teams = ttk.Combobox(self.frame_combo_select, values=list(self.values_combo_teams),
+                                        textvariable=self.var_combo_teams)
+        self.combo_teams.bind('<<ComboboxSelected>>', lambda event: self.autofill())
+        self.combo_teams.grid(row=1, column=0, sticky='w')
+
+        self.lb_entry_name = tk.Label(self.frame_input, text='Neuer Teamname:')
+        self.lb_entry_name.grid(row=0, column=0, sticky='w')
+        self.entry_name = tk.Entry(self.frame_input, width=30)
+        self.entry_name.grid(row=1, column=0, sticky='w')
+
+        self.bt_okay = tk.Button(self.frame_buttons, text='okay', width=15, command=self.save)
+        self.bt_okay.grid(row=0, column=0, sticky='e', padx=(0, 5))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=15, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
+
+        self.autofill()
+
+    def save(self):
+        response = requests.put(f'{self.parent.host}/admin/team',
+                                params={'access_token': self.access_token, 'new_team_name': self.entry_name.get()})
+        try:
+            updated_team = pm.Team.parse_obj(response.json())
+            self.parent.changed_team = updated_team
+            self.destroy()
+        except:
+            tk.messagebox.showerror(parent=self.parent, message=f'{response.text}')
+
+    def autofill(self):
+        self.entry_name.delete(0, 'end')
+        team = self.values_combo_teams[self.var_combo_teams.get()]
+        self.entry_name.insert(0, team.name)
+
+
 class CreatePlanperiod(tk.Toplevel):
     def __init__(self, parent, host: str, access_token: str):
         super().__init__(parent)
@@ -1261,7 +1324,7 @@ class CreatePlanperiod(tk.Toplevel):
         self.get_teams_and_mindates()
 
     def get_teams_and_mindates(self):
-        self.teams = HelperRequests.get_teams(self, self.host, self.access_token)
+        self.teams = HelperRequests.get_teams_dispatcher(self, self.host, self.access_token)
         self.values_combo_teams = {team.name: team.id for team in self.teams}
         self.var_combo_teams.set(self.teams[0].name)
         self.combo_teams.config(values=list(self.values_combo_teams))
@@ -1314,7 +1377,7 @@ class DeletePlanperiod(CommonTopLevel):
         self.var_combo_planperiods = tk.StringVar()
         self.var_combo_teams = tk.StringVar()
         self.values_combo_teams = {t.name: str(t.id)
-                                   for t in HelperRequests.get_teams(self, parent.host, self.access_token)}
+                                   for t in HelperRequests.get_teams_dispatcher(self, parent.host, self.access_token)}
         self.values_combo_planperiods: dict[str, pm.PlanPeriod] = {}
 
         self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Team')
@@ -1396,6 +1459,7 @@ class MainMenu(tk.Menu):
         self.admin.add_command(label='Neue/r Mitarbeiter:in...', command=parent.new_person)
         self.admin.add_command(label='Mitarbeiter:in einer Position zuweisen...',
                                command=parent.assign_person_to_position)
+        self.admin.add_command(label='Team ändern...', command=parent.change_team)
         self.admin.add_command(label='Team löschen...', command=parent.delete_team)
         self.admin.add_command(label='Mitarbeiter löschen...', command=parent.delete_person)
         self.admin.add_command(label='Projektname ändern...', command=parent.change_project_name)

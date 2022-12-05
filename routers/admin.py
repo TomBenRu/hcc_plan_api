@@ -8,7 +8,7 @@ from databases.enums import AuthorizationTypes
 import databases.pydantic_models as pm
 from databases.services import find_user_by_email, create_new_team, get_project_from_user_id, \
     get_all_persons, get_all_project_teams, create_person, update_all_persons_in_project, update_project_name, \
-    delete_person_from_project, delete_team_from_project, delete_a_account
+    delete_person_from_project, delete_team_from_project, delete_a_account, update_team_from_project
 from oauth2_authentication import create_access_token, verify_admin_username, verify_access_token, verify_user_password
 
 router = APIRouter(prefix='/admin', tags=['Admin'])
@@ -141,6 +141,22 @@ def delete_person(access_token: str, person_id: str):
         return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                              detail=f'Fehler: {e}')
     return deleted_person
+
+
+@router.put('/team')
+def update_team(access_token: str, team_id: str, new_team_name: str):
+    try:
+        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
+    admin_id: UUID = token_data.id
+
+    try:
+        updated_team = update_team_from_project(team_id=UUID(team_id), new_team_name=new_team_name)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                             detail=f'Fehler: {e}')
+    return updated_team
 
 
 @router.delete('/team')
