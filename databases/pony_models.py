@@ -52,7 +52,7 @@ class Person(db_actors.Entity):
 
 class Team(db_actors.Entity):
     id = PrimaryKey(UUID, auto=True)
-    name = Required(str, 50, unique=True)
+    name = Required(str, 50)
     created_at = Required(date, default=lambda: date.today())
     last_modified = Required(datetime, default=lambda: datetime.utcnow())
     actors = Set(Person, reverse='team_of_actor')
@@ -62,6 +62,10 @@ class Team(db_actors.Entity):
     @property
     def project(self):
         return self.dispatcher.project
+
+    # def before_insert(self):
+    #     if self.project.teams.get(lambda t: t.name == self.name):
+    #         print(f'name {self.name} is allready in project')
 
 
 class Availables(db_actors.Entity):

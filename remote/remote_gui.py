@@ -60,6 +60,9 @@ class MainFrame(ttk.Frame):
         self.get_host()
         self.login()
 
+    def match_ids(self):
+        MakeHashmapToHccDispo(self)
+
     def get_host(self):
         while not self.host:
             try:
@@ -190,7 +193,10 @@ class MainFrame(ttk.Frame):
         get_av_days = GetAvailDays(self, self.host, access_token)
         self.wait_window(get_av_days)
 
-        self.text_log.insert('end', f'-- {self.avail_days}\n')
+        txt_to_insert = ''
+        for per_id, avd in self.avail_days.items():
+            txt_to_insert += f'{per_id}:\n{avd}\n'
+        self.text_log.insert('end', f'-- {txt_to_insert}\n')
 
     def login(self):
         self.text_log.insert('end', '- login\n')
@@ -246,6 +252,77 @@ class CommonTopLevel(tk.Toplevel):
         self.frame_input.pack()
         self.frame_buttons = ttk.Frame(self, padding='20 20 20 20')
         self.frame_buttons.pack()
+
+
+class MakeHashmapToHccDispo(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        try:
+            with open('match_ids.json', 'r') as f:
+                self.match_ids = json.load(f)
+        except Exception as e:
+            print(e)
+            with open('match_ids.json', 'w') as f:
+                json.dump({}, f)
+            self.match_ids = {}
+        with open('dispodaten_blanko__BW.json', 'r') as f:
+            dispodaten_bw = json.load(f)
+        with open('dispodaten_blanko__Mainz.json', 'r') as f:
+            dispodaten_mainz = json.load(f)
+
+        self.frame_combo_choice = ttk.Frame(self, padding='20 20 20 20 ')
+        self.frame_combo_choice.pack()
+        self.frame_entrys = ttk.Frame(self, padding='20 20 20 20')
+        self.frame_entrys.pack()
+        self.frame_buttons = ttk.Frame(self, padding='20 20 20 20')
+        self.frame_buttons.pack()
+
+        self.dispodaten = {'Baden-Württemberg': dispodaten_bw, 'Mainz': dispodaten_mainz}
+
+        self.var_combo_teams = tk.StringVar()
+        self.var_combo_persons = tk.StringVar()
+        self.values_combo_teams = list(self.dispodaten)
+        self.values_combo_persons = {}
+
+        self.lb_combo_teams = tk.Label(self.frame_combo_choice, text='Auswahl Team')
+        self.lb_combo_teams.grid(row=0, column=0, sticky='w', padx=(0, 5))
+        self.lb_combo_person = tk.Label(self.frame_combo_choice, text='Auswahl Person')
+        self.lb_combo_person.grid(row=0, column=1, sticky='w', padx=(5, 0))
+        self.combo_teams = ttk.Combobox(self.frame_combo_choice, values=self.values_combo_teams,
+                                        textvariable=self.var_combo_teams)
+        self.combo_teams.bind('<<ComboboxSelected>>', lambda event: self.autofill_persons())
+        self.combo_teams.grid(row=1, column=0, sticky='w', padx=(0, 5))
+        self.combo_persons = ttk.Combobox(self.frame_combo_choice, textvariable=self.var_combo_persons)
+        self.combo_persons.grid(row=1, column=1, sticky='w', padx=(5, 0))
+
+        self.lb_uuid = tk.Label(self.frame_entrys, text='Hier UUID eintragen:')
+        self.lb_uuid.grid(row=0, column=0, sticky='w')
+        self.entry_uuid = tk.Entry(self.frame_entrys, width=30)
+        self.entry_uuid.grid(row=1, column=0, sticky='w')
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=15, command=self.save)
+        self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 5))
+        self.bt_apply = tk.Button(self.frame_buttons, text='apply', width=15, command=self.apply)
+        self.bt_apply.grid(row=0, column=1, sticky='ew', padx=(5, 5))
+        self.bt_cancel = tk.Button(self.frame_buttons, text='cancel', width=15, command=self.destroy)
+        self.bt_cancel.grid(row=0, column=2, sticky='w', padx=(5, 0))
+
+    def save(self):
+        with open('match_ids.json', 'w') as f:
+            json.dump(self.match_ids, f)
+        self.destroy()
+
+    def apply(self):
+        team = self.var_combo_teams.get()
+        if not self.match_ids.get(team):
+            self.match_ids[team] = {}
+        self.match_ids[team][self.values_combo_persons[self.var_combo_persons.get()]] = self.entry_uuid.get()
+
+    def autofill_persons(self):
+        self.values_combo_persons = {datas['name']: datas['ID']
+                                     for datas in self.dispodaten[self.var_combo_teams.get()]['clowndaten']}
+        self.combo_persons.config(values=list(self.values_combo_persons))
+
 
 
 class Settings(tk.Toplevel):
@@ -1044,6 +1121,9 @@ class GetAvailDays(CommonTopLevel):
         self.bt_cancel.grid(row=0, column=1, padx=(5, 0), pady=(10, 0))
 
     def get_avail_days(self):
+        if not self.var_combo_planperiods.get():
+            tk.messagebox.showerror(parent=self, message='Bitte zuerst eine Planperiode auswählen.')
+            return
         planperiod_id = self.all_planperiods[self.var_combo_planperiods.get()].id
         response = requests.get(f'{self.host}/dispatcher/avail_days',
                                 params={'access_token': self.access_token, 'planperiod_id': planperiod_id})
@@ -1062,7 +1142,10 @@ class GetAvailDays(CommonTopLevel):
         planperiods = sorted(HelperRequests.get_planperiods(self.parent, self.host, self.access_token, team.id),
                              key=lambda pp: pp.start)
         self.all_planperiods = {f'{pp.start.strftime("%d.%m.%y")} - {pp.end.strftime("%d.%m.%y")}': pp
-                                for pp in planperiods}
+                                for pp in planperiods if pp.closed}
+        if not self.all_planperiods:
+            tk.messagebox.showinfo(parent=self, message=f'Keine Planperioden abrufbar.')
+            return
         values = list(self.all_planperiods)
         self.combo_planperiods.config(values=values)
         self.var_combo_planperiods.set(values[0])
@@ -1300,6 +1383,7 @@ class MainMenu(tk.Menu):
         self.add_cascade(label='login', underline=0, command=parent.login)
 
         self.file.add_command(label='Einstellungen', command=parent.settings)
+        self.file.add_command(label='match ids...', command=parent.match_ids)
 
         self.supervisor.add_command(label='Neues Projekt', command=parent.new_project)
 
