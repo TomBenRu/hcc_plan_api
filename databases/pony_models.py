@@ -1,13 +1,16 @@
 from datetime import date
 from datetime import datetime
 from uuid import UUID
-from pony.orm import Database, PrimaryKey, Required, Set, Optional, composite_key
+from pony.orm import Database, PrimaryKey, Required, Set, Optional, composite_key, IntegrityError
 
 from databases.enums import TimeOfDay
 
 
 db_actors = Database()
 
+
+class CustomError(Exception):
+    pass
 
 class Project(db_actors.Entity):
     id = PrimaryKey(UUID, auto=True)
@@ -63,9 +66,9 @@ class Team(db_actors.Entity):
     def project(self):
         return self.dispatcher.project
 
-    # def before_insert(self):
-    #     if self.project.teams.get(lambda t: t.name == self.name):
-    #         print(f'name {self.name} is allready in project')
+    def before_insert(self):
+        if list(self.project.teams.name).count(self.name) > 1:
+            raise CustomError(f'A Team named {self.name} is allready in your Project.')
 
 
 class Availables(db_actors.Entity):
