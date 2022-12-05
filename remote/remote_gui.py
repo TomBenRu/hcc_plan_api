@@ -1185,7 +1185,12 @@ class CreateTeam(CommonTopLevel):
 
         response = requests.post(f'{self.parent.host}/admin/team',
                                  json={'token': token.dict(), 'team': team.dict(), 'person': {'id': str(person_id)}})
-        team = response.json()
+        data = response.json()
+        try:
+            team = pm.Team.parse_obj(data)
+        except Exception as e:
+            tk.messagebox.showerror(parent=self, message=f'{response.text}, Fehler: {e}')
+            return
         self.parent.new_team_data = team
         self.destroy()
 
