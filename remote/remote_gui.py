@@ -1,7 +1,6 @@
 import datetime
 import json
 import threading
-import time
 import tkinter as tk
 import tkinter.messagebox
 import tkinter.ttk as ttk
@@ -54,7 +53,8 @@ class MainFrame(ttk.Frame):
 
         self.scroll_text_log = tk.Scrollbar(self.frame_log, orient='vertical')
         self.scroll_text_log.pack(side='right', fill='y')
-        self.text_log = tk.Text(self.frame_log, width=90, height=30, bg='#afe0ff', yscrollcommand=self.scroll_text_log.set)
+        self.text_log = tk.Text(self.frame_log, width=90, height=30, bg='#afe0ff',
+                                yscrollcommand=self.scroll_text_log.set)
         self.text_log.pack(side='left')
         self.scroll_text_log.config(command=self.text_log.yview)
 
@@ -1014,7 +1014,7 @@ class ChangePlanPeriod(CommonTopLevel):
 
         self.chk_closed = tk.Checkbutton(self.frame_input, text='Eingabe von Spieloptionen nicht mehr möglich.',
                                          variable=self.var_chk_closed)
-        self.chk_closed.grid(row=0, column=0, columnspan=3, pady=(0,10))
+        self.chk_closed.grid(row=0, column=0, columnspan=3, pady=(0, 10))
 
         self.lb_start = tk.Label(self.frame_input, text='Anfang:')
         self.lb_start.grid(row=1, column=0, sticky='w', padx=(5, 5))
@@ -1085,11 +1085,13 @@ class ChangePlanPeriod(CommonTopLevel):
             notes = self.values_combo_planperiods[self.var_combo_planperiods.get()].notes
             keys_values_planperiods = list(self.values_combo_planperiods)
             if (curr_index := keys_values_planperiods.index(self.var_combo_planperiods.get())) > 0:
-                maxdate = self.values_combo_planperiods[keys_values_planperiods[curr_index-1]].start - datetime.timedelta(days=1)
+                maxdate = (self.values_combo_planperiods[keys_values_planperiods[curr_index-1]].start
+                           - datetime.timedelta(days=1))
             else:
                 maxdate = None
             if curr_index < len(keys_values_planperiods) - 1:
-                mindate = self.values_combo_planperiods[keys_values_planperiods[curr_index+1]].end + datetime.timedelta(days=1)
+                mindate = (self.values_combo_planperiods[keys_values_planperiods[curr_index+1]].end
+                           + datetime.timedelta(days=1))
             else:
                 mindate = None
             self.start.config(mindate=mindate, maxdate=maxdate)
@@ -1230,8 +1232,8 @@ class ChangeTeam(CommonTopLevel):
 
         self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Auswahl Team:')
         self.lb_combo_teams.grid(row=0, column=0, sticky='w')
-        self.combo_teams = ttk.Combobox(self.frame_combo_select, values=list(self.values_combo_teams),
-                                        textvariable=self.var_combo_teams)
+        self.combo_teams = ttk.Combobox(self.frame_combo_select, width=27, values=list(self.values_combo_teams),
+                                        textvariable=self.var_combo_teams, state='readonly')
         self.combo_teams.bind('<<ComboboxSelected>>', lambda event: self.autofill())
         self.combo_teams.grid(row=1, column=0, sticky='w')
 
@@ -1248,8 +1250,10 @@ class ChangeTeam(CommonTopLevel):
         self.autofill()
 
     def save(self):
+        team = self.values_combo_teams[self.var_combo_teams.get()]
+
         response = requests.put(f'{self.parent.host}/admin/team',
-                                params={'access_token': self.access_token, 'new_team_name': self.entry_name.get()})
+                                params={'access_token': self.access_token, 'team_id': team.id, 'new_team_name': self.entry_name.get()})
         try:
             updated_team = pm.Team.parse_obj(response.json())
             self.parent.changed_team = updated_team
