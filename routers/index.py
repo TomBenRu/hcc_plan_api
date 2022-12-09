@@ -77,7 +77,7 @@ def account_settings(request: Request, confirmed_password: bool = True):
 
     return templates.TemplateResponse('account_settings_actor.html',
                                       context={'request': request, 'name_project': name_project,
-                                               'f_name': user.f_name, 'l_name': user.l_name,
+                                               'f_name': user.f_name, 'l_name': user.l_name, 'email': user.email,
                                                'confirmed_password': confirmed_password})
 
 

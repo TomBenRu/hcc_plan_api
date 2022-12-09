@@ -19,7 +19,7 @@
         <form action="{{ url_for('write_new_account_settings') }}" method="post">
             <div class="container">
                 <label for="uname"><b>Neue Email</b></label>
-                <input type="text" placeholder="Enter Email" name="email" id="uname" required>
+                <input type="text" placeholder="Enter Email" value="{{ email }}" name="email" id="uname" required>
                 <label for="psw"><b>Neues Password</b></label>
                 <input type="password" placeholder="Enter Password" name="password" id="psw" required>
                 <label for="psw"><b>Password wiederholen</b></label>
