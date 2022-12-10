@@ -65,11 +65,10 @@ async def actor_plan_periods_handler(request: Request):
 
 @router.get('/new_passwort')
 def send_new_password(request: Request, user_email: EmailStr):
-    print(f'{user_email = }')
     try:
         user = verify_actor_username(username=user_email)
     except Exception as e:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Fehler1: {e}')
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'User nicht gefunden: {e}')
     user_id = user.id
 
     try:
