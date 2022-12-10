@@ -1,6 +1,8 @@
 from fastapi import HTTPException, status, APIRouter, Request, Depends, Form
 from fastapi.templating import Jinja2Templates
 from pydantic import EmailStr
+from starlette.datastructures import URL
+from starlette.responses import RedirectResponse
 
 from databases.enums import AuthorizationTypes
 from databases.services import find_user_by_email, available_days_to_db, get_open_plan_periods, get_user_by_id, \
@@ -18,7 +20,9 @@ def actor_plan_periods(request: Request):
     try:
         token_data = get_current_user_cookie(request, 'access_token_actor', AuthorizationTypes.actor)
     except Exception as e:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Fehler: {e}')
+        redirect_url = URL(request.url_for('home')).include_query_params(confirmed_password=False)
+        return RedirectResponse(redirect_url, status_code=status.HTTP_303_SEE_OTHER)
+        # return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Fehler: {e}')
     user_id = token_data.id
 
     user = get_user_by_id(user_id)
