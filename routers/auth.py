@@ -5,20 +5,22 @@ from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 
 from databases.enums import AuthorizationTypes
 from databases.pydantic_models import Token
-from oauth2_authentication import create_access_token, verify_supervisor_username, verify_supervisor_password
+from oauth2_authentication import authenticate_user, create_access_token, get_authorization_types
 
 router = APIRouter(tags=['Authentication'])
 
 
-@router.get('/su/login', response_model=Token)
-def supervisor_login(email: str, password: str):
-    if not verify_supervisor_username(email):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'Invalid Credentials')
-    if not verify_supervisor_password(password):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'Invalid Credentials')
-
-    access_token = create_access_token(data={'supervisor': 'supervisor',
-                                             'authorization': AuthorizationTypes.supervisor.value})
-
-    return {'access_token': access_token, 'token_type': 'bearer'}
-
+@router.post('/token')
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    try:
+        user = authenticate_user(form_data.username, form_data.password)
+    except Exception as e:
+        raise e
+    if user == 'supervisor':
+        access_token = create_access_token(data={'user_id': 'supervisor',
+                                                     'authorization': [AuthorizationTypes.supervisor.value]})
+    else:
+        auth_types = get_authorization_types(user)
+        access_token = create_access_token(data={'user_id': str(user.id),
+                                                     'authorization': [a_t.value for a_t in auth_types]})
+    return Token(access_token=access_token, token_type='bearer')

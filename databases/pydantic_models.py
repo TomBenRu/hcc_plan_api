@@ -1,5 +1,5 @@
 from datetime import date, datetime, timedelta
-from typing import Optional, Set, Any, List
+from typing import Optional, Set, Any, List, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, EmailStr, conint, validator
@@ -179,8 +179,8 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    id: Optional[UUID] = None
-    authorization: Optional[str]
+    id: Union[UUID, str, None] = None
+    authorizations: List[str]
 
 
 ProjectCreate.update_forward_refs(**locals())

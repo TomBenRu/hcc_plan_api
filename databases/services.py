@@ -69,23 +69,19 @@ def make_person__actor_of_team(person: pm.Person, team: pm.Team, user_id: UUID):
         return pm.PersonShow.from_orm(person)
 
 
-def update_all_persons_in_project(all_persons: list[pm.PersonShow], admin_id: UUID) -> list[pm.PersonShow]:
+def update_person(person: pm.PersonShow, admin_id: UUID) -> pm.PersonShow:
     with db_session:
-        results = []
         project = Person[admin_id].project
-
-        for person in all_persons:
-            person_in_db = Person.get_for_update(id=person.id)
-            if person.project_of_admin:
-                project.admin = person_in_db
-            for t in person.teams_of_dispatcher:
-                Team[t.id].dispatcher = person_in_db
-            if person.team_of_actor:
-                person_in_db.team_of_actor = Team[person.team_of_actor.id]
-            else:
-                person_in_db.team_of_actor = None
-            results.append(pm.PersonShow.from_orm(person_in_db))
-        return results
+        person_in_db = Person.get_for_update(id=person.id)
+        if person.project_of_admin:
+            project.admin = person_in_db
+        for t in person.teams_of_dispatcher:
+            Team[t.id].dispatcher = person_in_db
+        if person.team_of_actor:
+            person_in_db.team_of_actor = Team[person.team_of_actor.id]
+        else:
+            person_in_db.team_of_actor = None
+        return pm.PersonShow.from_orm(person_in_db)
 
 
 def get_project_from_user_id(user_id) -> pm.Project:
@@ -119,19 +115,22 @@ def get_all_project_teams(admin_id: UUID) -> list[pm.Team]:
         return [pm.Team.from_orm(t) for t in teams]
 
 
-def find_user_by_email(email: str, authorization: AuthorizationTypes) -> pm.PersonShow | None:
+def get_list_of_authorizations(person: pm.PersonShow) -> list[AuthorizationTypes]:
+    auth_types = []
+    if person.team_of_actor:
+        auth_types.append(AuthorizationTypes.actor)
+    if person.project_of_admin:
+        auth_types.append(AuthorizationTypes.admin)
+    if person.teams_of_dispatcher:
+        auth_types.append(AuthorizationTypes.dispatcher)
+    return auth_types
+
+
+def find_user_by_email(email: str) -> pm.PersonShow | None:
     with db_session:
         person = Person.get(lambda p: p.email == email)
         if person:
-            if authorization == AuthorizationTypes.actor:
-                if person.team_of_actor:
-                    return pm.PersonShow.from_orm(person)
-            if authorization == AuthorizationTypes.admin:
-                if person.project_of_admin:
-                    return pm.PersonShow.from_orm(person)
-            if authorization == AuthorizationTypes.dispatcher:
-                if person.teams_of_dispatcher.select():
-                    return pm.PersonShow.from_orm(person)
+            return pm.PersonShow.from_orm(person)
         return None
 
 

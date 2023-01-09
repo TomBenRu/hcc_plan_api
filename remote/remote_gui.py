@@ -8,9 +8,11 @@ from typing import Literal, Optional
 
 import requests
 import tkcalendar
+import jwt
 from pydantic import EmailStr, BaseModel
 
 import databases.pydantic_models as pm
+from databases.enums import AuthorizationTypes
 from remote.tools import PlaceholderEntry
 from remote.progressbars import ProgressIndeterm
 
@@ -32,6 +34,8 @@ class MainFrame(ttk.Frame):
         self.logins: dict[str, LoginData] = {'superuser': LoginData(name='Superuser', prefix='su'),
                                              'admin': LoginData(name='Admin', prefix='admin'),
                                              'dispatcher': LoginData(name='Dispatcher', prefix='dispatcher')}
+        self.access_token = None
+        self.authorizations = []
 
         self.project: pm.Project | None = None
         self.new_project_data: dict | None = None
@@ -80,112 +84,101 @@ class MainFrame(ttk.Frame):
 
     def new_project(self):
         self.text_log.insert('end', '- new Project\n')
-        access_token = self.logins['superuser'].access_token
-        if not access_token:
+        if AuthorizationTypes.supervisor.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Superuser-Rechte.')
             return
-        create_new_project = CreateNewProject(self, access_token)
+        create_new_project = CreateNewProject(self, self.access_token)
         self.wait_window(create_new_project)
         self.text_log.insert('end', f'-- {self.new_project_data}')
 
     def delete_account(self):
         self.text_log.insert('end', '- delete account\n')
-        access_token = self.logins['admin'].access_token
-        if not access_token:
+        if AuthorizationTypes.admin.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
             return
-        DeleteAccount(self, access_token)
+        DeleteAccount(self, self.access_token)
 
     def new_person(self):
         self.text_log.insert('end', '- new person\n')
-        access_token = self.logins['admin'].access_token
-        if not access_token:
+        if not AuthorizationTypes.admin.value in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
             return
-        create_person = CreatePerson(self, access_token)
+        create_person = CreatePerson(self, self.access_token)
         self.wait_window(create_person)
         self.text_log.insert('end', f'-- {self.new_person_data}\n')
 
     def new_team(self):
-        access_token = self.logins['admin'].access_token
-        if not access_token:
+        if AuthorizationTypes.admin.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
             return
         self.text_log.insert('end', '- new team\n')
-        create_team = CreateTeam(self, access_token)
+        create_team = CreateTeam(self, self.access_token)
         self.wait_window(create_team)
         self.text_log.insert('end', f'-- {self.new_team_data}\n')
 
     def change_team(self):
-        access_token = self.logins['admin'].access_token
-        if not access_token:
+        if AuthorizationTypes.admin.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
             return
         self.text_log.insert('end', '- change team\n')
-        change_team = ChangeTeam(self, access_token)
+        change_team = ChangeTeam(self, self.access_token)
         self.wait_window(change_team)
         self.text_log.insert('end', f'-- {self.changed_team}\n')
 
     def delete_team(self):
-        access_token = self.logins['admin'].access_token
-        if not access_token:
+        if AuthorizationTypes.admin.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
             return
         self.text_log.insert('end', '- delete team\n')
-        DeleteTeam(self, access_token)
+        DeleteTeam(self, self.access_token)
 
     def assign_person_to_position(self):
         self.text_log.insert('end', '- new jobs for persons\n')
-        access_token = self.logins['admin'].access_token
-        if not access_token:
+        if AuthorizationTypes.admin.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
             return
-        assign_person = AssignPersonToPosition(self, access_token)
+        assign_person = AssignPersonToPosition(self, self.access_token)
         self.wait_window(assign_person)
         self.text_log.insert('end', f'-- {self.new_jobs}\n')
 
     def delete_person(self):
         self.text_log.insert('end', '- delete entry\n')
-        access_token = self.logins['admin'].access_token
-        if not access_token:
+        if AuthorizationTypes.admin.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
             return
-        DeletePerson(parent=self, access_token=access_token)
+        DeletePerson(parent=self, access_token=self.access_token)
 
     def new_planperiod(self):
-        access_token = self.logins['dispatcher'].access_token
-        if not access_token:
+        if AuthorizationTypes.dispatcher.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
             return
         self.text_log.insert('end', '- new planperiod\n')
-        create_planperiod = CreatePlanperiod(self, self.host, access_token)
+        create_planperiod = CreatePlanperiod(self, self.host, self.access_token)
         self.wait_window(create_planperiod)
         self.text_log.insert('end', f'-- {self.planperiod}\n')
 
     def delete_planperiod(self):
-        access_token = self.logins['dispatcher'].access_token
-        if not access_token:
+        if AuthorizationTypes.dispatcher.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
             return
         self.text_log.insert('end', '- delete planperiod\n')
-        DeletePlanperiod(self, access_token)
+        DeletePlanperiod(self, self.access_token)
 
     def change_planperiod(self):
         self.text_log.insert('end', '- change planperiod\n')
-        access_token = self.logins['dispatcher'].access_token
-        if not access_token:
+        if AuthorizationTypes.dispatcher.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
             return
-        change_planperiod = ChangePlanPeriod(self, access_token)
+        change_planperiod = ChangePlanPeriod(self, self.access_token)
         self.wait_window(change_planperiod)
         self.text_log.insert('end', f'-- {self.planperiod}\n')
 
     def change_project_name(self):
         self.text_log.insert('end', '- new planperiod\n')
-        if not self.logins['admin'].access_token:
+        if AuthorizationTypes.admin.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
             return
-        ChangeProjectName(self)
+        ChangeProjectName(self, self.access_token)
 
     def get_all_actors(self):
         self.text_log.insert('end', '- get all clowns\n')
@@ -196,12 +189,11 @@ class MainFrame(ttk.Frame):
         self.all_actors = persons
 
     def get_avail_days(self):
-        access_token = self.logins['dispatcher'].access_token
-        if not access_token:
+        if AuthorizationTypes.dispatcher.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
             return
         self.text_log.insert('end', f'- get avail_days\n')
-        get_av_days = GetAvailDays(self, self.host, access_token)
+        get_av_days = GetAvailDays(self, self.host, self.access_token)
         self.wait_window(get_av_days)
 
         txt_to_insert = ''
@@ -229,18 +221,18 @@ class HelperRequests:
             tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
 
     @classmethod
-    def get_teams_dispatcher(cls, parent, host: str, dispatcher_access_token: str):
+    def get_teams_dispatcher(cls, parent, host: str, access_token: str):
         response = requests.get(f'{host}/dispatcher/teams',
-                                params={'access_token': dispatcher_access_token})
+                                headers={'Authorization': f'Bearer {access_token}'})
         try:
             return sorted([pm.Team(**t) for t in response.json()], key=lambda t: t.name)
         except Exception as e:
             tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
 
     @staticmethod
-    def get_teams_admin(parent, host: str, admin_access_token):
+    def get_teams_admin(parent, host: str, access_token):
         response = requests.get(f'{host}/admin/teams',
-                                params={'access_token': admin_access_token})
+                                headers={'Authorization': f'Bearer {access_token}'})
         data = response.json()
         try:
             teams = [pm.Team.parse_obj(team) for team in data]
@@ -249,9 +241,10 @@ class HelperRequests:
             tk.messagebox.showerror(parent=parent, message=f'{response.text}')
 
     @classmethod
-    def get_planperiods(cls, parent, host: str, dispatcher_access_token: str, team_id: str):
+    def get_planperiods(cls, parent, host: str, access_token: str, team_id: str):
         response = requests.get(f'{host}/dispatcher/planperiods',
-                                params={'access_token': dispatcher_access_token, 'team_id': team_id})
+                                params={'team_id': team_id},
+                                headers={'Authorization': f'Bearer {access_token}'})
         try:
             planperiods = sorted([pm.PlanPeriod(**pp) for pp in response.json()], key=lambda v: v.start, reverse=True)
             return planperiods
@@ -446,24 +439,25 @@ class Login(CommonTopLevel):
     def login(self, progressbar: ProgressIndeterm):  # für das Endanwender-Programm: Logik und allgemeines Login auf Server. Server gibt alle Token und Rechte zurück.
         email = (self.entry_email.get()).lower()
         password = self.entry_password.get()
-        rights = []
-        login_data: dict[str, LoginData] = self.parent.logins
-        for data in login_data.values():
-            data.access_token = None
-        for k, data in login_data.items():
-            prefix = data.prefix
-            name = data.name
-            response = requests.get(f'{self.parent.host}/{prefix}/login', params={'email': email, 'password': password})
-            if access_token := response.json().get('access_token'):
-                rights.append(name)
-                data.access_token = access_token
 
-        info_text = '\n- '.join(rights)
+        response = requests.post(f'{self.parent.host}/token', data={'username': email, 'password': password})
+        try:
+            payload = jwt.decode(response.json()['access_token'], options={"verify_signature": False})
+        except KeyError as e:
+            progressbar.stop()
+            progressbar.destroy()
+            tk.messagebox.showerror(parent=self.parent, title='Login',
+                                    message='Ich konnte Sie nicht erfolgreich autorisieren.')
+            return
+
+        self.parent.access_token = response.json()['access_token']
+        self.parent.authorizations = payload["claims"]["authorization"]
+
         progressbar.stop()
         progressbar.destroy()
         tk.messagebox.showinfo(parent=self, title='Info',
                                message=f'Eingelogged als:\n'
-                                       f'- {info_text}')
+                                       f'- {", ".join(payload["claims"]["authorization"])}')
         if self.var_chk_save_access_data.get():
             with open('access_data.json', 'w') as f:
                 if not (person := self.var_combo_persons.get()):
@@ -538,8 +532,8 @@ class CreateNewProject(CommonTopLevel):
 
         token = pm.Token(access_token=self.access_token, token_type='bearer')
         response = requests.post(f'{self.parent.host}/su/account',
-                                 json={'person': person.dict(), 'project': project.dict(),
-                                       'access_token': token.dict()})
+                                 json={'person': person.dict(), 'project': project.dict()},
+                                 headers={'Authorization': f'Bearer {self.access_token}'})
         self.parent.new_project_data = response.json()
         self.destroy()
 
@@ -590,7 +584,8 @@ class DeleteAccount(CommonTopLevel):
                                                   f'(Dieser Vorgang kann nicht rückgängig gemacht werden.)'):
                 return
             response = requests.delete(f'{self.parent.host}/admin/account',
-                                       params={'access_token': self.access_token, 'project_id': self.project.id})
+                                       params={'project_id': self.project.id},
+                                       headers={'Authorization': f'Bearer {self.access_token}'})
             try:
                 deleted_project = pm.Project.parse_obj(response.json())
                 tk.messagebox.showinfo(parent=self,
@@ -616,11 +611,11 @@ class DeleteAccount(CommonTopLevel):
 
 
 class ChangeProjectName(CommonTopLevel):
-    def __init__(self, parent):
+    def __init__(self, parent, access_token):
         super().__init__(parent=parent)
         self.bind('<Return>', lambda event: self.change())
 
-        self.access_token = self.parent.logins['admin'].access_token
+        self.access_token = access_token
         self.old_name = None
 
         self.lb_name = tk.Label(self.frame_input, text='Projektname:')
@@ -643,13 +638,15 @@ class ChangeProjectName(CommonTopLevel):
             return
 
         response = requests.put(f'{self.parent.host}/admin/project',
-                                params={'access_token': self.access_token, 'new_name': self.entry_name.get()})
+                                params={'new_name': self.entry_name.get()},
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         self.destroy()
         tk.messagebox.showinfo(parent=self.parent,
                                message=f'Der Projektname wurde von "{self.old_name}" zu "{new_name} geändert."')
 
     def autofill(self):
-        response = requests.get(f'{self.parent.host}/admin/project', params={'access_token': self.access_token})
+        response = requests.get(f'{self.parent.host}/admin/project',
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         self.old_name = response.json()['name']
         self.entry_name.insert(0, self.old_name)
 
@@ -686,10 +683,9 @@ class CreatePerson(CommonTopLevel):
     def new_person(self):
         person = pm.PersonCreate(f_name=self.entry_fname.get(), l_name=self.entry_lname.get(),
                                  email=EmailStr(self.entry_email.get()), password=self.entry_password.get())
-
-        token = pm.Token(access_token=self.access_token, token_type='bearer')
         response = requests.post(f'{self.parent.host}/admin/person',
-                                 json={'token': token.dict(), 'person': person.dict()})
+                                 json=person.dict(),
+                                 headers={'Authorization': f'Bearer {self.access_token}'})
         self.parent.new_person_data = response.json()
         self.destroy()
 
@@ -757,18 +753,22 @@ class AssignPersonToPosition(CommonTopLevel):
         self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(5, 0))
 
     def update_to_db(self):
-        token = pm.Token(access_token=self.access_token, token_type='bearer')
         all_persons = {k: json.loads(v.json()) for k, v in self.all_persons_dict_for_combo.items()}
 
-        response = requests.put(f'{self.parent.host}/admin/update_all_persons',
-                                json={'token': token.dict(), 'all_persons': all_persons})
+        new_jobs = []
+
+        for person in all_persons.values():
+            response = requests.put(f'{self.parent.host}/admin/person', json=person,
+                                    headers={'Authorization': f'Bearer {self.access_token}'})
+            new_jobs.append(response.json())
+
         if self.id_of_old_amin != self.id_of_actual_admin:
             self.parent.logins['admin'].access_token = None
             new_admin = [p for p in self.all_persons if p.id == self.id_of_actual_admin][0]
             tk.messagebox.showwarning(parent=self, title='Admin Login',
                                       message=f'Sie wurden als Admin ausgeloggt. Neuer Admin des Projekts ist:\n'
                                               f'"{new_admin.f_name} {new_admin.l_name}."')
-        self.parent.new_jobs = response.json()
+        self.parent.new_jobs = new_jobs
         self.destroy()
 
     def new_selection_person(self):
@@ -860,7 +860,8 @@ class AssignPersonToPosition(CommonTopLevel):
                         self.vars_all_checks_team[id_team].set(False)
 
     def get_persons(self):
-        response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.access_token})
+        response = requests.get(f'{self.parent.host}/admin/persons',
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         try:
             all_persons = sorted([pm.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
             return all_persons
@@ -869,7 +870,7 @@ class AssignPersonToPosition(CommonTopLevel):
 
     def get_teams(self):
         response = requests.get(f'{self.parent.host}/admin/teams',
-                                params={'access_token': self.access_token})
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         data = response.json()
         if type(data) == dict and data.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
@@ -913,7 +914,8 @@ class DeleteTeam(CommonTopLevel):
             return
 
         response = requests.delete(f'{self.parent.host}/admin/team',
-                                   params={'access_token': self.access_token, 'team_id': team.id})
+                                   params={'team_id': team.id},
+                                   headers={'Authorization': f'Bearer {self.access_token}'})
 
         try:
             deleted_team = pm.Team.parse_obj(response.json())
@@ -960,7 +962,8 @@ class DeletePerson(CommonTopLevel):
             return
 
         response = requests.delete(f'{self.parent.host}/admin/person',
-                                   params={'access_token': self.access_token, 'person_id': person.id})
+                                   params={'person_id': person.id},
+                                   headers={'Authorization': f'Bearer {self.access_token}'})
 
         try:
             deleted_person = pm.Person(**response.json())
@@ -974,7 +977,8 @@ class DeletePerson(CommonTopLevel):
         self.destroy()
 
     def get_persons(self):
-        response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.access_token})
+        response = requests.get(f'{self.parent.host}/admin/persons',
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         try:
             all_persons = sorted([pm.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
             return all_persons
@@ -1053,10 +1057,10 @@ class ChangePlanPeriod(CommonTopLevel):
         planperiod.closed = self.var_chk_closed.get()
         planperiod.notes = self.text_notes.get(1.0, 'end')
         planperiod = json.loads(planperiod.json())
-        token = pm.Token(access_token=self.access_token, token_type='bearer')
 
         response = requests.put(f'{self.parent.host}/dispatcher/planperiod',
-                                json={'token': token.dict(), 'planperiod': planperiod})
+                                json=planperiod,
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         try:
             new_planperiod = pm.PlanPeriod.parse_obj(response.json())
             self.destroy()
@@ -1143,7 +1147,8 @@ class GetAvailDays(CommonTopLevel):
             return
         planperiod_id = self.all_planperiods[self.var_combo_planperiods.get()].id
         response = requests.get(f'{self.host}/dispatcher/avail_days',
-                                params={'access_token': self.access_token, 'planperiod_id': planperiod_id})
+                                params={'planperiod_id': planperiod_id},
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         avail_days = response.json()
         try:
             avail_days = {person_id: [pm.AvailDay.parse_obj(ad) for ad in av_days]
@@ -1198,10 +1203,10 @@ class CreateTeam(CommonTopLevel):
     def create(self):
         team = pm.TeamCreate(name=self.entry_name.get())
         person_id = self.all_persons[self.var_combo_dispatcher.get()]
-        token = pm.Token(access_token=self.access_token, token_type='bearer')
 
         response = requests.post(f'{self.parent.host}/admin/team',
-                                 json={'token': token.dict(), 'team': team.dict(), 'person': {'id': str(person_id)}})
+                                 json={'team': team.dict(), 'person': {'id': str(person_id)}},
+                                 headers={'Authorization': f'Bearer {self.access_token}'})
         data = response.json()
         try:
             team = pm.Team.parse_obj(data)
@@ -1212,7 +1217,8 @@ class CreateTeam(CommonTopLevel):
         self.destroy()
 
     def get_persons(self):
-        response = requests.get(f'{self.parent.host}/admin/persons', params={'access_token': self.access_token})
+        response = requests.get(f'{self.parent.host}/admin/persons',
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         all_persons = sorted([pm.Person(**p) for p in response.json()], key=lambda p: p.f_name)
         return all_persons
 
@@ -1253,7 +1259,8 @@ class ChangeTeam(CommonTopLevel):
         team = self.values_combo_teams[self.var_combo_teams.get()]
 
         response = requests.put(f'{self.parent.host}/admin/team',
-                                params={'access_token': self.access_token, 'team_id': team.id, 'new_team_name': self.entry_name.get()})
+                                params={'team_id': team.id, 'new_team_name': self.entry_name.get()},
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         try:
             updated_team = pm.Team.parse_obj(response.json())
             self.parent.changed_team = updated_team
@@ -1338,7 +1345,8 @@ class CreatePlanperiod(tk.Toplevel):
     def get_last_day_of_existing_planperiods(self):
         team_id = self.values_combo_teams[self.var_combo_teams.get()]
         response = requests.get(f'{self.host}/dispatcher/pp_last_recent_date',
-                                params={'access_token': self.access_token, 'team_id': team_id})
+                                params={'team_id': team_id},
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         data = response.json()
         if type(data) == dict and data.get('status_code') == 401:
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
@@ -1361,9 +1369,10 @@ class CreatePlanperiod(tk.Toplevel):
         notes = self.text_notes.get(1.0, 'end')
 
         response = requests.post(f'{self.parent.host}/dispatcher/planperiod',
-                                 params={'access_token': self.access_token, 'team_id': team_id,
+                                 params={'team_id': team_id,
                                          'date_start': start.isoformat(), 'date_end': end.isoformat(),
-                                         'deadline': deadline, 'notes': notes})
+                                         'deadline': deadline, 'notes': notes},
+                                 headers={'Authorization': f'Bearer {self.access_token}'})
         self.parent.planperiod = response.json()
         self.destroy()
         tk.messagebox.showinfo(parent=self.parent, message='Planperiode wurde erfolgreich erstellt.')
@@ -1412,7 +1421,8 @@ class DeletePlanperiod(CommonTopLevel):
                                                  f'\nDieser Vorgang kann nicht rückgängig gemacht werden.'):
             return
         response = requests.delete(f'{self.parent.host}/dispatcher/planperiod',
-                                   params={'access_token': self.access_token, 'planperiod_id': planperiod.id})
+                                   params={'planperiod_id': planperiod.id},
+                                   headers={'Authorization': f'Bearer {self.access_token}'})
         try:
             deleted_planperiod = pm.PlanPeriod(**response.json())
             tk.messagebox.showinfo(parent=self,

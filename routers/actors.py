@@ -5,10 +5,10 @@ from starlette.datastructures import URL
 from starlette.responses import RedirectResponse
 
 from databases.enums import AuthorizationTypes
-from databases.services import find_user_by_email, available_days_to_db, get_open_plan_periods, get_user_by_id, \
-    set_new_actor_account_settings, set_new_password, get_project_from_user_id
-from oauth2_authentication import create_access_token, get_current_user_cookie, verify_actor_username
-from utilities import utils, send_mail
+from databases.services import (available_days_to_db, get_open_plan_periods, get_user_by_id, set_new_password,
+                                get_project_from_user_id)
+from oauth2_authentication import get_current_user_cookie, verify_actor_username
+from utilities import send_mail
 
 templates = Jinja2Templates(directory='templates')
 
@@ -18,7 +18,7 @@ router = APIRouter(prefix='/actors', tags=['Actors'])
 @router.get('/plan-periods')
 def actor_plan_periods(request: Request):
     try:
-        token_data = get_current_user_cookie(request, 'access_token_actor', AuthorizationTypes.actor)
+        token_data = get_current_user_cookie(request, 'hcc_plan_auth', AuthorizationTypes.actor)
     except Exception as e:
         redirect_url = URL(request.url_for('home')).include_query_params(confirmed_password=False)
         return RedirectResponse(redirect_url, status_code=status.HTTP_303_SEE_OTHER)
@@ -41,7 +41,7 @@ def actor_plan_periods(request: Request):
 @router.post('/plan-periods-handler')
 async def actor_plan_periods_handler(request: Request):
     try:
-        token_data = get_current_user_cookie(request, 'access_token_actor', AuthorizationTypes.actor)
+        token_data = get_current_user_cookie(request, 'hcc_plan_auth', AuthorizationTypes.actor)
     except Exception as e:
         redirect_url = URL(request.url_for('home')).include_query_params(confirmed_password=False)
         return RedirectResponse(redirect_url, status_code=status.HTTP_303_SEE_OTHER)
