@@ -227,9 +227,9 @@ def get_user_by_id(user_id: UUID) -> pm.Person:
         return pm.Person.from_orm(person)
 
 
-def get_actors_in_dispatcher_teams(dispatcher_id: UUID) -> list[pm.Person]:
+def get_actors_in_dispatcher_teams(dispatcher_id: UUID) -> list[pm.PersonShow]:
     with db_session:
-        return [pm.Person.from_orm(p) for p in Person[dispatcher_id].teams_of_dispatcher.actors]
+        return [pm.PersonShow.from_orm(p) for p in Person[dispatcher_id].teams_of_dispatcher.actors]
 
 
 def get_avail_days_from_planperiod(planperiod_id: UUID) -> dict[UUID, list[pm.AvailDay]]:

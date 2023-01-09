@@ -182,10 +182,12 @@ class MainFrame(ttk.Frame):
 
     def get_all_actors(self):
         self.text_log.insert('end', '- get all clowns\n')
-        if not (access_token := self.logins['dispatcher'].access_token):
+        if AuthorizationTypes.dispatcher.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
-        persons = HelperRequests.get_all_actors(self, self.host, access_token)
-        self.text_log.insert('end', f'-- {persons}\n')
+        persons = HelperRequests.get_all_actors(self, self.host, self.access_token)
+        persons_clean = '\n'.join([f'{p.f_name=}, {p.l_name=}, {p.project=}, {p.team_of_actor=}, '
+                                   f'{p.teams_of_dispatcher=}, {p.project_of_admin=}' for p in persons])
+        self.text_log.insert('end', f'-- {persons_clean}\n')
         self.all_actors = persons
 
     def get_avail_days(self):
@@ -212,10 +214,11 @@ class HelperRequests:
         pass
 
     @classmethod
-    def get_all_actors(cls, parent, host: str, access_token: str) -> list[pm.Person]:
-        response = requests.get(f'{host}/dispatcher/actors', params={'access_token': access_token})
+    def get_all_actors(cls, parent, host: str, access_token: str) -> list[pm.PersonShow]:
+        response = requests.get(f'{host}/dispatcher/actors',
+                                headers={'Authorization': f'Bearer {access_token}'})
         try:
-            persons: list[pm.Person] = [pm.Person.parse_obj(p) for p in response.json()]
+            persons: list[pm.PersonShow] = [pm.PersonShow.parse_obj(p) for p in response.json()]
             return persons
         except Exception as e:
             tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
