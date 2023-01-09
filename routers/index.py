@@ -106,5 +106,5 @@ def write_new_account_settings(request: Request, email: EmailStr = Form(...), pa
     response = templates.TemplateResponse('index.html',
                                           context={'request': request, 'InvalidCredentials': False, 'logged_out': False,
                                                    'account_changed': True})
-    response.delete_cookie('access_token_actor')
+    response.delete_cookie('hcc_plan_auth')
     return response
