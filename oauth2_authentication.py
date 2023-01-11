@@ -25,21 +25,20 @@ credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
 
 
 def create_access_token(data: dict) -> str:
-    to_encode = {'user_id': data['user_id'], 'claims': {'authorization': data['authorization']}}
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({'exp': expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    data.update({'exp': expire})
+    encoded_jwt = jwt.encode(claims=data, key=SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
 def verify_access_token(token: str, authorization: AuthorizationTypes) -> pm.TokenData:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
+        payload = jwt.decode(token=token, key=SECRET_KEY, algorithms=ALGORITHM)
         if not (u_id := payload.get('user_id')):
             raise credentials_exception
-        if authorization.value not in payload['claims']['authorization']:
+        if authorization.value not in payload['authorization']:
             raise credentials_exception
-        token_data = pm.TokenData(id=u_id, authorizations=payload['claims']['authorization'])
+        token_data = pm.TokenData(id=u_id, authorizations=payload['authorization'])
     except JWTError:
         raise credentials_exception
     return token_data

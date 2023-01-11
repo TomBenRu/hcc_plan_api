@@ -30,10 +30,6 @@ class MainFrame(ttk.Frame):
         super().__init__(parent)
 
         self.host: str | None = None
-
-        self.logins: dict[str, LoginData] = {'superuser': LoginData(name='Superuser', prefix='su'),
-                                             'admin': LoginData(name='Admin', prefix='admin'),
-                                             'dispatcher': LoginData(name='Dispatcher', prefix='dispatcher')}
         self.access_token = None
         self.authorizations = []
 
@@ -185,8 +181,10 @@ class MainFrame(ttk.Frame):
         if AuthorizationTypes.dispatcher.value not in self.authorizations:
             tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Dispatcher-Rechte.')
         persons = HelperRequests.get_all_actors(self, self.host, self.access_token)
-        persons_clean = '\n'.join([f'{p.f_name=}, {p.l_name=}, {p.project=}, {p.team_of_actor=}, '
-                                   f'{p.teams_of_dispatcher=}, {p.project_of_admin=}' for p in persons])
+        persons_clean = '\n'.join([f'Name: {p.f_name} {p.l_name}, Projekt: {p.project.name}, '
+                                   f'Team: {p.team_of_actor.name if p.team_of_actor else "kein Team"}, '
+                                   f'Dipspatcher: {[t.name for t in p.teams_of_dispatcher]}, '
+                                   f'Admin: {p.project_of_admin.name if p.project_of_admin else "kein Admin"}' for p in persons])
         self.text_log.insert('end', f'-- {persons_clean}\n')
         self.all_actors = persons
 
@@ -387,12 +385,6 @@ class Settings(tk.Toplevel):
         self.parent.host = self.entry_host.get()
         tk.messagebox.showinfo(parent=self, message='Die Einstellungen wurden vorgenommen.')
         self.destroy()
-
-
-class LoginData(BaseModel):
-    name: str
-    prefix: str
-    access_token: Optional[str]
 
 
 class Login(CommonTopLevel):
@@ -766,7 +758,8 @@ class AssignPersonToPosition(CommonTopLevel):
             new_jobs.append(response.json())
 
         if self.id_of_old_amin != self.id_of_actual_admin:
-            self.parent.logins['admin'].access_token = None
+            self.parent.access_token = None
+            self.parent.authorizations = []
             new_admin = [p for p in self.all_persons if p.id == self.id_of_actual_admin][0]
             tk.messagebox.showwarning(parent=self, title='Admin Login',
                                       message=f'Sie wurden als Admin ausgeloggt. Neuer Admin des Projekts ist:\n'
