@@ -18,9 +18,9 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         raise e
     if user == 'supervisor':
         access_token = create_access_token(data={'user_id': 'supervisor',
-                                                     'authorization': [AuthorizationTypes.supervisor.value]})
+                                                 'roles': [AuthorizationTypes.supervisor.value]})
     else:
         auth_types = get_authorization_types(user)
         access_token = create_access_token(data={'user_id': str(user.id),
-                                                     'authorization': [a_t.value for a_t in auth_types]})
+                                                 'roles': [a_t.value for a_t in auth_types]})
     return Token(access_token=access_token, token_type='bearer')

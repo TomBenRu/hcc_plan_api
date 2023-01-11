@@ -17,7 +17,7 @@ router = APIRouter(prefix='/dispatcher', tags=['Dispatcher'])
 @router.get('/project')
 def get_project(access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     user_id = token_data.id
@@ -30,7 +30,7 @@ def get_project(access_token: str = Depends(oauth2_scheme)):
 async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline: str, notes: str = '',
                          access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials - {e}')
     dispatcher_id = token_data.id
@@ -52,7 +52,7 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
 @router.delete('/planperiod')
 def delete_planperiod(planperiod_id: str, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     user_id = token_data.id
@@ -67,7 +67,7 @@ def delete_planperiod(planperiod_id: str, access_token: str = Depends(oauth2_sch
 @router.put('/planperiod')
 def update_planperiod(planperiod: pm.PlanPeriod, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     user_id = token_data.id
@@ -82,7 +82,7 @@ def update_planperiod(planperiod: pm.PlanPeriod, access_token: str = Depends(oau
 @router.get('/pp_last_recent_date')
 async def get_planperiod_last_recent_date(team_id: str, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials: {e}')
     user_id = token_data.id
@@ -98,7 +98,7 @@ async def get_planperiod_last_recent_date(team_id: str, access_token: str = Depe
 @router.get('/teams')
 async def get_teams(access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials: {e}')
     user_id = token_data.id
@@ -112,7 +112,7 @@ async def get_teams(access_token: str = Depends(oauth2_scheme)):
 @router.get('/planperiods')
 def get_planperiods(team_id: str, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials: {e}')
     user_id = token_data.id
@@ -126,7 +126,7 @@ def get_planperiods(team_id: str, access_token: str = Depends(oauth2_scheme)):
 @router.get('/actors')
 def get_clowns(access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials: {e}')
     user_id = token_data.id
@@ -137,7 +137,7 @@ def get_clowns(access_token: str = Depends(oauth2_scheme)):
 @router.get('/avail_days')
 def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.dispatcher)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials - {e}')
     user_id = token_data.id

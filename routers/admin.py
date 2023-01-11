@@ -15,7 +15,7 @@ router = APIRouter(prefix='/admin', tags=['Admin'])
 @router.get('/persons')
 async def get_persons(access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     user_id = token_data.id
@@ -29,7 +29,7 @@ async def get_persons(access_token: str = Depends(oauth2_scheme)):
 @router.get('/teams')
 async def get_teams(access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     user_id = token_data.id
@@ -43,7 +43,7 @@ async def get_teams(access_token: str = Depends(oauth2_scheme)):
 @router.get('/project')
 async def get_project(access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     user_id = token_data.id
@@ -55,7 +55,7 @@ async def get_project(access_token: str = Depends(oauth2_scheme)):
 @router.put('/project')
 async def update_projekt_name(new_name: str, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     user_id = token_data.id
@@ -70,7 +70,7 @@ async def update_projekt_name(new_name: str, access_token: str = Depends(oauth2_
 @router.post('/person')
 async def add_new_person(person: pm.PersonCreate, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         raise e
     user_id = token_data.id
@@ -84,7 +84,7 @@ async def add_new_person(person: pm.PersonCreate, access_token: str = Depends(oa
 @router.post('/team')
 async def add_new_team(team: pm.TeamCreate, person: dict, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     try:
@@ -98,7 +98,7 @@ async def add_new_team(team: pm.TeamCreate, person: dict, access_token: str = De
 @router.put('/person')
 async def update_a_person(person: pm.PersonShow, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     admin_id: UUID = token_data.id
@@ -113,7 +113,7 @@ async def update_a_person(person: pm.PersonShow, access_token: str = Depends(oau
 @router.delete('/person')
 async def delete_person(person_id: str, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     admin_id: UUID = token_data.id
@@ -129,7 +129,7 @@ async def delete_person(person_id: str, access_token: str = Depends(oauth2_schem
 @router.put('/team')
 async def update_team(team_id: str, new_team_name: str, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     admin_id: UUID = token_data.id
@@ -145,7 +145,7 @@ async def update_team(team_id: str, new_team_name: str, access_token: str = Depe
 @router.delete('/team')
 async def delete_team(team_id: str, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     admin_id: UUID = token_data.id
@@ -161,7 +161,7 @@ async def delete_team(team_id: str, access_token: str = Depends(oauth2_scheme)):
 @router.delete('/account')
 async def delete_account(project_id: str, access_token: str = Depends(oauth2_scheme)):
     try:
-        token_data = verify_access_token(access_token, authorization=AuthorizationTypes.admin)
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Error: {e}')
     admin_id: UUID = token_data.id

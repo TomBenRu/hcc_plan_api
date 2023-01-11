@@ -42,7 +42,7 @@ def home_2(request: Request, email: EmailStr = Form(...), password: str = Form(.
         return templates.TemplateResponse('index.html', context={'request': request, 'InvalidCredentials': True})
     auth_types = get_authorization_types(user)
     access_token = create_access_token(data={'user_id': str(user.id),
-                                             'authorization': [a_t.value for a_t in auth_types]})
+                                             'roles': [a_t.value for a_t in auth_types]})
 
     name_project = user.project.name
     f_name = user.f_name

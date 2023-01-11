@@ -31,25 +31,25 @@ def create_access_token(data: dict) -> str:
     return encoded_jwt
 
 
-def verify_access_token(token: str, authorization: AuthorizationTypes) -> pm.TokenData:
+def verify_access_token(token: str, role: AuthorizationTypes) -> pm.TokenData:
     try:
         payload = jwt.decode(token=token, key=SECRET_KEY, algorithms=ALGORITHM)
         if not (u_id := payload.get('user_id')):
             raise credentials_exception
-        if authorization.value not in payload['authorization']:
+        if role.value not in payload['roles']:
             raise credentials_exception
-        token_data = pm.TokenData(id=u_id, authorizations=payload['authorization'])
+        token_data = pm.TokenData(id=u_id, authorizations=payload['roles'])
     except JWTError:
         raise credentials_exception
     return token_data
 
 
-def get_current_user_cookie(request: Request, token_key: str, authorization: AuthorizationTypes):
+def get_current_user_cookie(request: Request, token_key: str, role: AuthorizationTypes):
     token: str | None = request.cookies.get(token_key)
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='you have to log in first')
 
-    return verify_access_token(token, authorization)
+    return verify_access_token(token, role)
 
 
 def get_authorization_types(user: pm.PersonShow) -> list[AuthorizationTypes]:

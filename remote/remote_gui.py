@@ -446,13 +446,13 @@ class Login(CommonTopLevel):
             return
 
         self.parent.access_token = response.json()['access_token']
-        self.parent.authorizations = payload["claims"]["authorization"]
+        self.parent.authorizations = payload["roles"]
 
         progressbar.stop()
         progressbar.destroy()
         tk.messagebox.showinfo(parent=self, title='Info',
                                message=f'Eingelogged als:\n'
-                                       f'- {", ".join(payload["claims"]["authorization"])}')
+                                       f'- {", ".join(payload["roles"])}')
         if self.var_chk_save_access_data.get():
             with open('access_data.json', 'w') as f:
                 if not (person := self.var_combo_persons.get()):
