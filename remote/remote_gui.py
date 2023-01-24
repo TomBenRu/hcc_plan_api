@@ -1147,7 +1147,7 @@ class GetAvailDays(CommonTopLevel):
                                 headers={'Authorization': f'Bearer {self.access_token}'})
         avail_days = response.json()
         try:
-            avail_days = {person_id: [pm.AvailDay.parse_obj(ad) for ad in av_days]
+            avail_days = {person_id: {'days': [pm.AvailDay.parse_obj(ad) for ad in av_days['days']], 'notes': av_days['notes']}
                           for person_id, av_days in avail_days.items()}
             self.parent.avail_days = avail_days
             self.destroy()

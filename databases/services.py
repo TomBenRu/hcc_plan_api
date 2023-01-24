@@ -1,7 +1,7 @@
 import datetime
 import secrets
 import time
-from typing import Type, Optional
+from typing import Type, Optional, Union
 from uuid import UUID
 
 from pony.orm import Database, db_session, select, TransactionIntegrityError
@@ -232,10 +232,10 @@ def get_actors_in_dispatcher_teams(dispatcher_id: UUID) -> list[pm.PersonShow]:
         return [pm.PersonShow.from_orm(p) for p in Person[dispatcher_id].teams_of_dispatcher.actors]
 
 
-def get_avail_days_from_planperiod(planperiod_id: UUID) -> dict[UUID, list[pm.AvailDay]]:
+def get_avail_days_from_planperiod(planperiod_id: UUID) -> dict[UUID, dict[str, Union[str, pm.AvailDay]]]:
     with db_session:
         availabless = list(PlanPeriod[planperiod_id].availabless)
-        avail_days = {availables.person.id: [pm.AvailDay.from_orm(av_d) for av_d in list(availables.avail_days)]
+        avail_days = {availables.person.id: {'notes': availables.notes, 'days': [pm.AvailDay.from_orm(av_d) for av_d in list(availables.avail_days)]}
                       for availables in availabless}
         return avail_days
 
