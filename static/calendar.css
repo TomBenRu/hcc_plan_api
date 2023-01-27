@@ -61,3 +61,8 @@ th {
     padding: 50px;
     margin: 20px;
 }
+
+.urgent-notes {
+        font-size: smaller;
+        white-space: pre-line;
+}
