@@ -2,13 +2,14 @@ import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi_utils.tasks import repeat_every
 
 from databases.enums import AuthorizationTypes
 import databases.pydantic_models as pm
 from databases.services import (create_new_plan_period, get_actors_in_dispatcher_teams,
                                 get_planperiods_last_recent_date, get_project_from_user_id, get_teams_of_dispatcher,
                                 get_planperiods_of_team, update_1_planperiod, delete_planperiod_from_team,
-                                get_avail_days_from_planperiod)
+                                get_avail_days_from_planperiod, get_not_feedbacked_availables)
 from oauth2_authentication import verify_access_token, oauth2_scheme
 
 router = APIRouter(prefix='/dispatcher', tags=['Dispatcher'])
@@ -143,4 +144,13 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
     user_id = token_data.id
     avail_days = get_avail_days_from_planperiod(planperiod_id=UUID(planperiod_id))
     return avail_days
+
+
+@router.on_event('startup')
+@repeat_every(seconds=2, wait_first=True)
+def remainder_availables():
+    actors = get_actors_in_dispatcher_teams(UUID('80ea7175-497b-40bb-9b4d-3ffc78bb0bd2'))
+    for person in actors:
+        not_feedbacked = get_not_feedbacked_availables(person)
+        print(f'{person.f_name=}, {not_feedbacked=}')
 
