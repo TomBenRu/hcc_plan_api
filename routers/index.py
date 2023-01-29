@@ -112,13 +112,3 @@ def write_new_account_settings(request: Request, email: EmailStr = Form(...), pa
                                                    'account_changed': True})
     response.delete_cookie('hcc_plan_auth')
     return response
-
-
-@router.on_event('startup')
-@repeat_every(seconds=2, wait_first=True)
-def remainder_availables():
-    print('remainder')
-    actors = get_actors_in_dispatcher_teams(UUID('80ea7175-497b-40bb-9b4d-3ffc78bb0bd2'))
-    for person in actors:
-        not_feedbacked = get_not_feedbacked_availables(person)
-        print(f'{person.f_name=}, {not_feedbacked=}')
