@@ -2,14 +2,13 @@ import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi_utils.tasks import repeat_every
 
 from databases.enums import AuthorizationTypes
 import databases.pydantic_models as pm
 from databases.services import (create_new_plan_period, get_actors_in_dispatcher_teams,
                                 get_planperiods_last_recent_date, get_project_from_user_id, get_teams_of_dispatcher,
                                 get_planperiods_of_team, update_1_planperiod, delete_planperiod_from_team,
-                                get_avail_days_from_planperiod, get_not_feedbacked_availables)
+                                get_avail_days_from_planperiod)
 from oauth2_authentication import verify_access_token, oauth2_scheme
 
 router = APIRouter(prefix='/dispatcher', tags=['Dispatcher'])

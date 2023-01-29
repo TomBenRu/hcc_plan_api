@@ -1,16 +1,12 @@
-from uuid import UUID
-
 from fastapi import HTTPException, status, APIRouter, Request, Depends, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-from fastapi_utils.tasks import repeat_every
 from pydantic import EmailStr
 from starlette.datastructures import URL
 from starlette.responses import RedirectResponse
 
 from databases.enums import AuthorizationTypes
-from databases.services import get_user_by_id, set_new_actor_account_settings, get_actors_in_dispatcher_teams, \
-    get_not_feedbacked_availables
+from databases.services import get_user_by_id, set_new_actor_account_settings
 from oauth2_authentication import verify_actor_username, get_current_user_cookie, \
     authenticate_user, create_access_token, get_authorization_types
 from utilities import utils

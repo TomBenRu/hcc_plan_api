@@ -221,12 +221,12 @@ def update_1_planperiod(planperiod: pm.PlanPeriod) -> pm.PlanPeriod:
         return pm.PlanPeriod.from_orm(planperiod_db)
 
 
-def get_not_feedbacked_availables(person: pm.PersonShow) -> list[pm.PlanPeriod]:
-    with db_session:
-        person_in_db = Person.get(id=person.id)
-        planperiods = [pp for pp in person_in_db.team.plan_periods if not pp.closed]
-        not_feedbacked = [pp for pp in planperiods if pp.availabless.person == person_in_db]
-        return [pm.PlanPeriod.from_orm(pp) for pp in not_feedbacked]
+# def get_not_feedbacked_availables(person: pm.PersonShow) -> list[pm.PlanPeriod]:
+#     with db_session:
+#         person_in_db = Person.get(id=person.id)
+#         planperiods = [pp for pp in person_in_db.team.plan_periods if not pp.closed]
+#         not_feedbacked = [pp for pp in planperiods if pp.availabless.person == person_in_db]
+#         return [pm.PlanPeriod.from_orm(pp) for pp in not_feedbacked]
 
 
 def get_user_by_id(user_id: UUID) -> pm.Person:
