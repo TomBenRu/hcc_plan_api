@@ -39,7 +39,7 @@ def probe_job(job_id: str):
     msg['Subject'] = f'Remainder: Abgabe deiner Spieloptionen - {job_id=}'
     msg.set_content(f'Hallo Tester, '
                     f'\n\n heute ist die Deadline für die Abgabe deiner Spieloptionen.\n'
-                    f'Es sind noch keine Rückmeldungen über den Online-Planungsservice von {pm.Person.project.name} '
+                    f'Es sind noch keine Rückmeldungen über den Online-Planungsservice von pm.Person.project.name '
                     f'für die folgenden Planungen eingegangen:\n\n'
                     f'- text_planperiods.\n\n'
                     f'Falls du dies bereits per Excell-Tabelle via Email getan hast, vergiss diesen Remainder.\n'
