@@ -163,6 +163,6 @@ def create_remainder(job_id: str, delta_minute: int):
     planpriod = get_planperiod(UUID(job_id))
     print(planpriod)
     new_job = add_job_to_db(pm.RemainderDeadlineCreate(plan_period=planpriod, trigger='date',
-                                                       run_date=datetime.datetime.now() + datetime.timedelta(delta_minute),
+                                                       run_date=datetime.datetime.now() + datetime.timedelta(minutes=delta_minute),
                                                        args=[job_id]))
     return new_job
