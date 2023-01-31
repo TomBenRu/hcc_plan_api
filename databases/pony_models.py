@@ -140,7 +140,6 @@ class AvailDay(db_actors.Entity):
 
 
 class RemainderDeadline(db_actors.Entity):
-    _table_ = "ap_scheduler_jobs, jobs"
     plan_period = Required(PlanPeriod)
     trigger = Required(str, default='date')
     run_date = Required(datetime)
