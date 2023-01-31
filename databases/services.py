@@ -243,13 +243,15 @@ def add_job_to_db(job: pm.RemainderDeadlineCreate):
         return pm.RemainderDeadline.from_orm(new_remainder)
 
 
-def delete_job_from_db(job_id: str) -> pm.RemainderDeadline:
+def delete_job_from_db(job_id: str) -> list[pm.RemainderDeadline]:
     with db_session:
         plan_period_db = PlanPeriod.get(id=UUID(job_id))
-        job_db_to_delete: RemainderDeadline = RemainderDeadline.get(plan_period=plan_period_db)
-        print(f'{job_db_to_delete=}')
-        job_db_to_delete.delete()
-        return pm.RemainderDeadline.from_orm(job_db_to_delete)
+        jobs_db_to_delete = RemainderDeadline.select(lambda rd: rd.plan_period == plan_period_db)
+        for job_db_to_delete in jobs_db_to_delete:
+            print(f'{job_db_to_delete=}')
+            job_db_to_delete.delete()
+        jobs_db_to_delete = [pm.RemainderDeadline.from_orm(jd) for jd in jobs_db_to_delete]
+        return jobs_db_to_delete
 
 
 def get_user_by_id(user_id: UUID) -> pm.Person:
