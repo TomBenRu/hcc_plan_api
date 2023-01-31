@@ -60,6 +60,9 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
         scheduler.add_job(func=send_remainder_deadline, trigger='date',
                           run_date=new_plan_period.deadline - datetime.timedelta(days=1), id=str(new_plan_period.id),
                           args=[str(new_plan_period.id)])
+        add_job_to_db(pm.RemainderDeadlineCreate(plan_period=get_planperiod(new_plan_period.id), trigger='date',
+                                                 run_date=new_plan_period.deadline - datetime.timedelta(days=1),
+                                                 args=[str(new_plan_period.id)]))
 
     return new_plan_period
 
@@ -181,7 +184,7 @@ def create_remainder(job_id: str, delta_minute: int):
     return new_job
 
 
-@router.get('/persons-without-availables', response_model=list[pm.Person])
-def persons_without_av(plan_period_id: str):
-    persons = get_not_feedbacked_availables(plan_period_id)
-    return persons
+# @router.get('/persons-without-availables', response_model=list[pm.Person])
+# def persons_without_av(plan_period_id: str):
+#     persons = get_not_feedbacked_availables(plan_period_id)
+#     return persons
