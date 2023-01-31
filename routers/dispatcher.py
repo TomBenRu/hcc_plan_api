@@ -12,7 +12,7 @@ from databases.services import (create_new_plan_period, get_actors_in_dispatcher
                                 get_not_feedbacked_availables)
 from oauth2_authentication import verify_access_token, oauth2_scheme
 from utilities.scheduler import scheduler
-from utilities.send_mail import probe_job, send_remainder_deadline
+from utilities.send_mail import send_remainder_deadline
 
 router = APIRouter(prefix='/dispatcher', tags=['Dispatcher'])
 

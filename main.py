@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from databases.services import get_scheduler_jobs
 from routers import auth, actors, supervisor, admin, dispatcher, index
 from utilities.scheduler import scheduler
-from utilities.send_mail import probe_job
+from utilities.send_mail import send_remainder_deadline
 import databases.pydantic_models as pm
 
 app = FastAPI()
@@ -21,8 +21,8 @@ def scheduler_startup():
     jobs: list[pm.RemainderDeadline] = get_scheduler_jobs()
     print(f'{[(j.plan_period.id, j.run_date) for j in jobs]}')
     for job in jobs:
-        scheduler.add_job(func=probe_job, trigger=job.trigger, run_date=job.run_date, id=str(job.plan_period.id),
-                          args=job.args)
+        scheduler.add_job(func=send_remainder_deadline, trigger=job.trigger, run_date=job.run_date,
+                          id=str(job.plan_period.id), args=job.args)
 
 
 app.include_router(index.router)

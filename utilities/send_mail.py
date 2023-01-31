@@ -32,37 +32,10 @@ def send_new_password(person: pm.Person, project: str, new_psw: str):
     return True
 
 
-def probe_job(job_id: str):
-    print('Sende Email...................................')
-    send_to = 'mail@thomas-ruff.de'
-    msg = EmailMessage()
-    msg['From'] = SEND_ADDRESS
-    msg['To'] = send_to
-    msg['Subject'] = f'Remainder: Abgabe deiner Spieloptionen - {job_id=}'
-    msg.set_content(f'Hallo Tester, '
-                    f'\n\n heute ist die Deadline für die Abgabe deiner Spieloptionen.\n'
-                    f'Es sind noch keine Rückmeldungen über den Online-Planungsservice von pm.Person.project.name '
-                    f'für die folgenden Planungen eingegangen:\n\n'
-                    f'- text_planperiods.\n\n'
-                    f'Falls du dies bereits per Excell-Tabelle via Email getan hast, vergiss diesen Remainder.\n'
-                    f'Andernfalls solltest du das noch heute erledigen, damit ich dich bei der Planung der Einsätze '
-                    f'berücksichtigen kann.\n\n'
-                    f'plan_periods[0].team.dispatcher.f_name plan_periods[0].team.dispatcher.l_name\n'
-                    f'(Spielplanung pm.Person.project.name)')
-    with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.ehlo()
-        smtp.login(SEND_ADDRESS, SEND_PASSWORD)
-        smtp.send_message(msg)
-
-    delete_job_from_db(job_id)
-
-
 def send_remainder_deadline(plan_period_id: str):
     planperiod = get_planperiod(UUID(plan_period_id))
     persons = get_not_feedbacked_availables(plan_period_id)
-    text_planperiod = f"{planperiod.start.strftime('%d.%m.%y')}-{planperiod.end.strftime('%d.%m.%y')}"
+    text_planperiod = f"Zeitraum: {planperiod.start.strftime('%d.%m.%y')} - {planperiod.end.strftime('%d.%m.%y')}"
     for person in persons:
         send_to = person.email
         msg = EmailMessage()
@@ -72,11 +45,11 @@ def send_remainder_deadline(plan_period_id: str):
         msg.set_content(f'Hallo {person.f_name} {person.l_name}, '
                         f'\n\n heute ist die Deadline für die Abgabe deiner Spieloptionen.\n'
                         f'Es sind noch keine Rückmeldungen über den Online-Planungsservice von {person.project.name} '
-                        f'für die folgenden Planungen eingegangen:\n\n'
+                        f'für die folgende Planung eingegangen:\n\n'
                         f'- {text_planperiod}.\n\n'
                         f'Falls du dies bereits per Excell-Tabelle via Email getan hast, vergiss diesen Remainder.\n'
-                        f'Andernfalls solltest du das noch heute erledigen, damit ich dich bei der Planung der Einsätze '
-                        f'berücksichtigen kann.\n\n'
+                        f'Andernfalls solltest du das noch heute erledigen, damit ich dich bei der Planung der '
+                        f'Einsätze berücksichtigen kann.\n\n'
                         f'{planperiod.team.dispatcher.f_name} {planperiod.team.dispatcher.l_name}\n'
                         f'(Spielplanung {person.project.name})')
         with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
