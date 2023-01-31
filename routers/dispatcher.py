@@ -165,6 +165,7 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
 
 @router.post('/create_remainder', response_model=pm.RemainderDeadline)
 def create_remainder(planperiod_id: str, date: datetime.date):
+    print(f'in create_ramainder: {date}')
     try:
         scheduler.remove_job(job_id=planperiod_id)
     except:
@@ -176,9 +177,8 @@ def create_remainder(planperiod_id: str, date: datetime.date):
     scheduler.add_job(func=send_remainder_deadline, trigger='date',
                       run_date=date, id=planperiod_id, args=[planperiod_id])
     planpriod = get_planperiod(UUID(planperiod_id))
-    print(planpriod)
     new_job = add_job_to_db(pm.RemainderDeadlineCreate(plan_period=planpriod, trigger='date',
-                                                       run_date=date,
+                                                       run_date=datetime.datetime(year=date.year, month=date.month, day=date.day),
                                                        args=[planperiod_id]))
     return new_job
 
