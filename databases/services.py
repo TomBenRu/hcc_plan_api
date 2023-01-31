@@ -238,6 +238,7 @@ def get_scheduler_jobs() -> list[pm.RemainderDeadline]:
 
 def add_job_to_db(job: pm.RemainderDeadlineCreate):
     with db_session:
+        print(f'add_job_to_db: {job.run_date=}')
         new_remainder = RemainderDeadline(plan_period=job.plan_period.id, trigger=job.trigger, run_date=job.run_date,
                                           args=job.args)
         return pm.RemainderDeadline.from_orm(new_remainder)
