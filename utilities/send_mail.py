@@ -32,6 +32,7 @@ def send_new_password(person: pm.Person, project: str, new_psw: str):
 
 
 def probe_job(job_id: str):
+    print('Sende Email...................................')
     send_to = 'mail@thomas-ruff.de'
     msg = EmailMessage()
     msg['From'] = SEND_ADDRESS
