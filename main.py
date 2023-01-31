@@ -16,6 +16,7 @@ app.mount('/static', StaticFiles(directory='static'), name='static')
 @app.on_event('startup')
 def scheduler_startup():
     scheduler.start()
+    print('scheduler started')
     jobs = get_scheduler_jobs()
     for job in jobs:
         scheduler.add_job(func=probe_job, trigger=job.trigger, run_date=job.run_date, id=str(job.plan_period.id),
