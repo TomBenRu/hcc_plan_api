@@ -163,25 +163,24 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
     return avail_days
 
 
-# @router.post('/create_remainder', response_model=pm.RemainderDeadline)
-# def create_remainder(job_id: str, delta_minute: int):
-#     try:
-#         scheduler.remove_job(job_id=job_id)
-#     except:
-#         pass
-#     try:
-#         delete_job_from_db(job_id)
-#     except:
-#         pass
-#     scheduler.add_job(func=probe_job, trigger='date',
-#                       run_date=datetime.datetime.now() + datetime.timedelta(minutes=delta_minute),
-#                       id=job_id, args=[job_id])
-#     planpriod = get_planperiod(UUID(job_id))
-#     print(planpriod)
-#     new_job = add_job_to_db(pm.RemainderDeadlineCreate(plan_period=planpriod, trigger='date',
-#                                                        run_date=datetime.datetime.now() + datetime.timedelta(minutes=delta_minute),
-#                                                        args=[job_id]))
-#     return new_job
+@router.post('/create_remainder', response_model=pm.RemainderDeadline)
+def create_remainder(planperiod_id: str, date: datetime.date):
+    try:
+        scheduler.remove_job(job_id=planperiod_id)
+    except:
+        pass
+    try:
+        delete_job_from_db(planperiod_id)
+    except:
+        pass
+    scheduler.add_job(func=send_remainder_deadline, trigger='date',
+                      run_date=date, id=planperiod_id, args=[planperiod_id])
+    planpriod = get_planperiod(UUID(planperiod_id))
+    print(planpriod)
+    new_job = add_job_to_db(pm.RemainderDeadlineCreate(plan_period=planpriod, trigger='date',
+                                                       run_date=date,
+                                                       args=[planperiod_id]))
+    return new_job
 
 
 # @router.get('/persons-without-availables', response_model=list[pm.Person])

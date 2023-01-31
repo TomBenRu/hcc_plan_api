@@ -1322,7 +1322,8 @@ class CreatePlanperiod(tk.Toplevel):
         self.text_notes.grid(row=1, column=0, sticky='w')
 
         self.var_chk_remainder = tk.BooleanVar(value=True)
-        self.chk_remainder = tk.Checkbutton(self.frame_notes, text='Email-Remainder schicken')
+        self.chk_remainder = tk.Checkbutton(self.frame_notes, text='Email-Remainder schicken',
+                                            variable=self.var_chk_remainder)
         self.chk_remainder.grid(row=2, column=0, pady=(10, 0))
 
         self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=15, command=self.create_period)
@@ -1369,7 +1370,8 @@ class CreatePlanperiod(tk.Toplevel):
         response = requests.post(f'{self.parent.host}/dispatcher/planperiod',
                                  params={'team_id': team_id,
                                          'date_start': start.isoformat(), 'date_end': end.isoformat(),
-                                         'deadline': deadline, 'remainder': True, 'notes': notes},
+                                         'deadline': deadline, 'remainder': self.var_chk_remainder.get(),
+                                         'notes': notes},
                                  headers={'Authorization': f'Bearer {self.access_token}'})
         self.parent.planperiod = response.json()
         self.destroy()
