@@ -47,7 +47,7 @@ def probe_job(job_id: str):
                     f'Andernfalls solltest du das noch heute erledigen, damit ich dich bei der Planung der Einsätze '
                     f'berücksichtigen kann.\n\n'
                     f'plan_periods[0].team.dispatcher.f_name plan_periods[0].team.dispatcher.l_name\n'
-                    f'(Spielplanung {pm.Person.project.name})')
+                    f'(Spielplanung pm.Person.project.name)')
     with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
         smtp.ehlo()
         smtp.starttls()
