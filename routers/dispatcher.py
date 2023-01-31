@@ -8,7 +8,7 @@ import databases.pydantic_models as pm
 from databases.services import (create_new_plan_period, get_actors_in_dispatcher_teams,
                                 get_planperiods_last_recent_date, get_project_from_user_id, get_teams_of_dispatcher,
                                 get_planperiods_of_team, update_1_planperiod, delete_planperiod_from_team,
-                                get_avail_days_from_planperiod, add_job_to_db, get_planperiod)
+                                get_avail_days_from_planperiod, add_job_to_db, get_planperiod, delete_job_from_db)
 from oauth2_authentication import verify_access_token, oauth2_scheme
 from utilities.scheduler import scheduler
 from utilities.send_mail import probe_job
@@ -149,6 +149,14 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
 
 @router.post('/create_remainder', response_model=pm.RemainderDeadline)
 def create_remainder(job_id: str, delta_t: int):
+    try:
+        scheduler.remove_job(job_id=job_id)
+    except:
+        pass
+    try:
+        delete_job_from_db(job_id)
+    except:
+        pass
     scheduler.add_job(func=probe_job, trigger='date',
                       run_date=datetime.datetime.now() + datetime.timedelta(seconds=delta_t),
                       id=job_id, args=[job_id])
