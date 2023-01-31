@@ -222,12 +222,12 @@ def update_1_planperiod(planperiod: pm.PlanPeriod) -> pm.PlanPeriod:
         return pm.PlanPeriod.from_orm(planperiod_db)
 
 
-# def get_not_feedbacked_availables(person: pm.PersonShow) -> list[pm.PlanPeriod]:
-#     with db_session:
-#         person_in_db = Person.get(id=person.id)
-#         planperiods = [pp for pp in person_in_db.team.plan_periods if not pp.closed]
-#         not_feedbacked = [pp for pp in planperiods if pp.availabless.person == person_in_db]
-#         return [pm.PlanPeriod.from_orm(pp) for pp in not_feedbacked]
+def get_not_feedbacked_availables(plan_period_id: str) -> list[pm.Person]:
+    with db_session:
+        persons_with_availables = list(PlanPeriod[UUID(plan_period_id)].availabless.person)
+        persons_without_availables = [person for person in PlanPeriod[UUID(plan_period_id)].team.actors
+                                      if person not in persons_with_availables]
+        return [pm.Person.from_orm(p) for p in persons_without_availables]
 
 
 def get_scheduler_jobs() -> list[pm.RemainderDeadline]:

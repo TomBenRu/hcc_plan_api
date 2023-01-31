@@ -8,10 +8,11 @@ import databases.pydantic_models as pm
 from databases.services import (create_new_plan_period, get_actors_in_dispatcher_teams,
                                 get_planperiods_last_recent_date, get_project_from_user_id, get_teams_of_dispatcher,
                                 get_planperiods_of_team, update_1_planperiod, delete_planperiod_from_team,
-                                get_avail_days_from_planperiod, add_job_to_db, get_planperiod, delete_job_from_db)
+                                get_avail_days_from_planperiod, add_job_to_db, get_planperiod, delete_job_from_db,
+                                get_not_feedbacked_availables)
 from oauth2_authentication import verify_access_token, oauth2_scheme
 from utilities.scheduler import scheduler
-from utilities.send_mail import probe_job
+from utilities.send_mail import probe_job, send_remainder_deadline
 
 router = APIRouter(prefix='/dispatcher', tags=['Dispatcher'])
 
@@ -29,7 +30,7 @@ def get_project(access_token: str = Depends(oauth2_scheme)):
 
 
 @router.post('/planperiod')
-async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline: str, notes: str = '',
+async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline: str, remainder: bool, notes: str = '',
                          access_token: str = Depends(oauth2_scheme)):
     try:
         token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
@@ -47,6 +48,18 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
         new_plan_period = create_new_plan_period(team_id, date_start, date_end, deadline, notes)
     except ValueError as e:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler: {e}')
+    if remainder:
+        try:
+            scheduler.remove_job(str(new_plan_period.id))
+        except:
+            pass
+        try:
+            delete_job_from_db(str(new_plan_period.id))
+        except:
+            pass
+        scheduler.add_job(func=send_remainder_deadline, trigger='date',
+                          run_date=new_plan_period.deadline - datetime.timedelta(days=1), id=str(new_plan_period.id),
+                          args=[str(new_plan_period.id)])
 
     return new_plan_period
 
@@ -166,3 +179,9 @@ def create_remainder(job_id: str, delta_minute: int):
                                                        run_date=datetime.datetime.now() + datetime.timedelta(minutes=delta_minute),
                                                        args=[job_id]))
     return new_job
+
+
+@router.get('/persons-without-availables', response_model=list[pm.Person])
+def persons_without_av(plan_period_id: str):
+    persons = get_not_feedbacked_availables(plan_period_id)
+    return persons

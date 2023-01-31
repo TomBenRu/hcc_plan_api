@@ -68,14 +68,14 @@ def send_remainder_deadline(person: pm.Person, plan_periods: list[pm.PlanPeriod]
     msg['Subject'] = f'Remainder: Abgabe deiner Spieloptionen'
     msg.set_content(f'Hallo {person.f_name} {person.l_name}, '
                     f'\n\n heute ist die Deadline für die Abgabe deiner Spieloptionen.\n'
-                    f'Es sind noch keine Rückmeldungen über den Online-Planungsservice von {pm.Person.project.name} '
+                    f'Es sind noch keine Rückmeldungen über den Online-Planungsservice von {person.project.name} '
                     f'für die folgenden Planungen eingegangen:\n\n'
                     f'- {text_planperiods}.\n\n'
                     f'Falls du dies bereits per Excell-Tabelle via Email getan hast, vergiss diesen Remainder.\n'
                     f'Andernfalls solltest du das noch heute erledigen, damit ich dich bei der Planung der Einsätze '
                     f'berücksichtigen kann.\n\n'
                     f'{plan_periods[0].team.dispatcher.f_name} {plan_periods[0].team.dispatcher.l_name}\n'
-                    f'(Spielplanung {pm.Person.project.name})')
+                    f'(Spielplanung {person.project.name})')
     with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
         smtp.ehlo()
         smtp.starttls()

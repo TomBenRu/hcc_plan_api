@@ -1310,16 +1310,20 @@ class CreatePlanperiod(tk.Toplevel):
         self.calendar_to = tkcalendar.dateentry.DateEntry(self.frame_calendar, locale='de_DE', width=20,
                                                           date_pattern='dd.mm.yyyy')
         self.calendar_to.grid(row=1, column=1, padx=(5, 5), sticky='w')
-        self.lb_calendar_notes = tk.Label(self.frame_calendar, text='Termin Deadline:')
-        self.lb_calendar_notes.grid(row=0, column=2, sticky='w')
-        self.calendar_notes = tkcalendar.dateentry.DateEntry(self.frame_calendar, locale='de_DE', width=20,
-                                                             date_pattern='dd.mm.yyyy')
-        self.calendar_notes.grid(row=1, column=2, padx=(5, 0), sticky='w')
+        self.lb_calendar_deadline = tk.Label(self.frame_calendar, text='Termin Deadline:')
+        self.lb_calendar_deadline.grid(row=0, column=2, sticky='w')
+        self.calendar_deadline = tkcalendar.dateentry.DateEntry(self.frame_calendar, locale='de_DE', width=20,
+                                                                date_pattern='dd.mm.yyyy')
+        self.calendar_deadline.grid(row=1, column=2, padx=(5, 0), sticky='w')
 
         self.lb_text_notes = tk.Label(self.frame_notes, text='Notitzen:')
         self.lb_text_notes.grid(row=0, column=0, sticky='w')
         self.text_notes = tk.Text(self.frame_notes, width=50, height=10)
         self.text_notes.grid(row=1, column=0, sticky='w')
+
+        self.var_chk_remainder = tk.BooleanVar(value=True)
+        self.chk_remainder = tk.Checkbutton(self.frame_notes, text='Email-Remainder schicken')
+        self.chk_remainder.grid(row=2, column=0, pady=(10, 0))
 
         self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=15, command=self.create_period)
         self.bt_ok.grid(row=0, column=0, padx=(0, 10), sticky='e')
@@ -1359,13 +1363,13 @@ class CreatePlanperiod(tk.Toplevel):
         team_id = self.values_combo_teams[self.var_combo_teams.get()]
         start: datetime.date = self.calendar_from.get_date()
         end: datetime.date = self.calendar_to.get_date()
-        deadline: datetime.date = self.calendar_notes.get_date()
+        deadline: datetime.date = self.calendar_deadline.get_date()
         notes = self.text_notes.get(1.0, 'end')
 
         response = requests.post(f'{self.parent.host}/dispatcher/planperiod',
                                  params={'team_id': team_id,
                                          'date_start': start.isoformat(), 'date_end': end.isoformat(),
-                                         'deadline': deadline, 'notes': notes},
+                                         'deadline': deadline, 'remainder': True, 'notes': notes},
                                  headers={'Authorization': f'Bearer {self.access_token}'})
         self.parent.planperiod = response.json()
         self.destroy()
