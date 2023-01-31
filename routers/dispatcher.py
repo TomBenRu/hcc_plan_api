@@ -57,12 +57,12 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
             delete_job_from_db(str(new_plan_period.id))
         except:
             pass
-        scheduler.add_job(func=send_remainder_deadline, trigger='date',
-                          run_date=new_plan_period.deadline - datetime.timedelta(days=1), id=str(new_plan_period.id),
+        run_date = datetime.datetime(new_plan_period.deadline.year, new_plan_period.deadline.month,
+                                     new_plan_period.deadline.day) - datetime.timedelta(days=1)
+        scheduler.add_job(func=send_remainder_deadline, trigger='date', run_date=run_date, id=str(new_plan_period.id),
                           args=[str(new_plan_period.id)])
         add_job_to_db(pm.RemainderDeadlineCreate(plan_period=get_planperiod(new_plan_period.id), trigger='date',
-                                                 run_date=new_plan_period.deadline - datetime.timedelta(days=1),
-                                                 args=[str(new_plan_period.id)]))
+                                                 run_date=run_date, args=[str(new_plan_period.id)]))
 
     return new_plan_period
 
@@ -163,24 +163,24 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
     return avail_days
 
 
-@router.post('/create_remainder', response_model=pm.RemainderDeadline)
-def create_remainder(planperiod_id: str, date: datetime.date):
-    print(f'in create_ramainder: {date}')
-    try:
-        scheduler.remove_job(job_id=planperiod_id)
-    except:
-        pass
-    try:
-        delete_job_from_db(planperiod_id)
-    except:
-        pass
-    scheduler.add_job(func=send_remainder_deadline, trigger='date',
-                      run_date=date, id=planperiod_id, args=[planperiod_id])
-    planpriod = get_planperiod(UUID(planperiod_id))
-    new_job = add_job_to_db(pm.RemainderDeadlineCreate(plan_period=planpriod, trigger='date',
-                                                       run_date=datetime.datetime(year=date.year, month=date.month, day=date.day),
-                                                       args=[planperiod_id]))
-    return new_job
+# @router.post('/create_remainder', response_model=pm.RemainderDeadline)
+# def create_remainder(planperiod_id: str, date: datetime.date):
+#     print(f'in create_ramainder: {date}')
+#     try:
+#         scheduler.remove_job(job_id=planperiod_id)
+#     except:
+#         pass
+#     try:
+#         delete_job_from_db(planperiod_id)
+#     except:
+#         pass
+#     scheduler.add_job(func=send_remainder_deadline, trigger='date',
+#                       run_date=date, id=planperiod_id, args=[planperiod_id])
+#     planpriod = get_planperiod(UUID(planperiod_id))
+#     new_job = add_job_to_db(pm.RemainderDeadlineCreate(plan_period=planpriod, trigger='date',
+#                                                        run_date=datetime.datetime(year=date.year, month=date.month, day=date.day),
+#                                                        args=[planperiod_id]))
+#     return new_job
 
 
 # @router.get('/persons-without-availables', response_model=list[pm.Person])
