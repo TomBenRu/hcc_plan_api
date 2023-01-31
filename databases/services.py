@@ -324,7 +324,7 @@ def create_new_plan_period(team_id: str, date_start: datetime.date | None, date_
 
 def get_planperiod(pp_id: UUID):
     with db_session:
-        return PlanPeriod[pp_id]
+        return pm.PlanPeriod.from_orm(PlanPeriod[pp_id])
 
 
 def delete_planperiod_from_team(planperiod_id: UUID):
