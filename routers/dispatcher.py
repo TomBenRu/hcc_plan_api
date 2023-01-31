@@ -147,14 +147,14 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
     return avail_days
 
 
-@router.post('/create_remainder')
+@router.post('/create_remainder', response_model=pm.RemainderDeadline)
 def create_remainder(job_id: str, delta_t: int):
     scheduler.add_job(func=probe_job, trigger='date',
                       run_date=datetime.datetime.now() + datetime.timedelta(seconds=delta_t),
                       id=job_id, args=[job_id])
     planpriod = get_planperiod(UUID(job_id))
     print(planpriod)
-    # new_job = add_job_to_db(pm.RemainderDeadlineCreate(plan_period=planpriod, trigger='date',
-    #                                                    run_date=datetime.datetime.now() + datetime.timedelta(delta_t),
-    #                                                    args=[job_id]))
-    # return new_job
+    new_job = add_job_to_db(pm.RemainderDeadlineCreate(plan_period=planpriod, trigger='date',
+                                                       run_date=datetime.datetime.now() + datetime.timedelta(delta_t),
+                                                       args=[job_id]))
+    return new_job

@@ -322,7 +322,7 @@ def create_new_plan_period(team_id: str, date_start: datetime.date | None, date_
         return pm.PlanPeriod.from_orm(plan_period)
 
 
-def get_planperiod(pp_id: UUID):
+def get_planperiod(pp_id: UUID) -> pm.PlanPeriod:
     with db_session:
         return pm.PlanPeriod.from_orm(PlanPeriod[pp_id])
 
