@@ -18,6 +18,7 @@ def scheduler_startup():
     scheduler.start()
     print('scheduler started')
     jobs = get_scheduler_jobs()
+    print(f'{jobs=}')
     for job in jobs:
         scheduler.add_job(func=probe_job, trigger=job.trigger, run_date=job.run_date, id=str(job.plan_period.id),
                           args=job.args)
