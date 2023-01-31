@@ -245,7 +245,7 @@ def add_job_to_db(job: pm.RemainderDeadlineCreate):
 
 def delete_job_from_db(job_id: str) -> pm.RemainderDeadline:
     with db_session:
-        plan_period_db = PlanPeriod.get(UUID(job_id))
+        plan_period_db = PlanPeriod.get(id=UUID(job_id))
         job_db_to_delete: RemainderDeadline = RemainderDeadline.get(plan_period=plan_period_db)
         job_db_to_delete.delete()
         return pm.RemainderDeadline.from_orm(job_db_to_delete)
