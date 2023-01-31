@@ -591,11 +591,9 @@ class DeleteAccount(CommonTopLevel):
                 tk.messagebox.showerror(parent=self, message=f'Fehler: {response.text}, Exception: {e}')
                 return
 
-
-
-
     def get_project(self):
-        response = requests.get(f'{self.parent.host}/admin/project', params={'access_token': self.access_token})
+        response = requests.get(f'{self.parent.host}/admin/project',
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         try:
             project = pm.Project.parse_obj(response.json())
             print(project)

@@ -104,6 +104,7 @@ class PlanPeriod(db_actors.Entity):
     last_modified = Required(datetime, default=lambda: datetime.utcnow())
     team = Required(Team)
     availabless = Set(Availables)
+    remainder_deadline = Optional('RemainderDeadline')
 
     @property
     def dispatcher(self):
@@ -136,3 +137,12 @@ class AvailDay(db_actors.Entity):
 
     def before_update(self):
         self.last_modified = datetime.utcnow()
+
+
+class RemainderDeadline(db_actors.Entity):
+    _table_ = "ap_scheduler_jobs, jobs"
+    plan_period = Required(PlanPeriod)
+    trigger = Required(str, default='date')
+    run_date = Required(datetime)
+    func = Optional(str)
+    args = Required(list, default=[])

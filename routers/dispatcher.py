@@ -8,8 +8,10 @@ import databases.pydantic_models as pm
 from databases.services import (create_new_plan_period, get_actors_in_dispatcher_teams,
                                 get_planperiods_last_recent_date, get_project_from_user_id, get_teams_of_dispatcher,
                                 get_planperiods_of_team, update_1_planperiod, delete_planperiod_from_team,
-                                get_avail_days_from_planperiod)
+                                get_avail_days_from_planperiod, add_job_to_db, get_planperiod)
 from oauth2_authentication import verify_access_token, oauth2_scheme
+from utilities.scheduler import scheduler
+from utilities.send_mail import probe_job
 
 router = APIRouter(prefix='/dispatcher', tags=['Dispatcher'])
 
@@ -143,3 +145,14 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
     user_id = token_data.id
     avail_days = get_avail_days_from_planperiod(planperiod_id=UUID(planperiod_id))
     return avail_days
+
+
+@router.post('/create_remainder', response_model=pm.RemainderDeadline)
+def create_reainder(job_id: str, delta_t: int):
+    scheduler.add_job(func=probe_job, trigger='date', run_date=datetime.datetime.now() + datetime.timedelta(delta_t),
+                      id=job_id, args=[job_id])
+    planpriod = get_planperiod(UUID(job_id))
+    new_job = add_job_to_db(pm.RemainderDeadlineCreate(plan_period=planpriod, trigger='date',
+                                                       run_date=datetime.datetime.now() + datetime.timedelta(delta_t),
+                                                       args=[job_id]))
+    return new_job

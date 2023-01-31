@@ -3,6 +3,7 @@ import smtplib
 
 import databases.pydantic_models as pm
 import settings
+from databases.services import delete_job_from_db
 
 SEND_ADDRESS = settings.settings.send_address
 SEND_PASSWORD = settings.settings.send_password
@@ -28,6 +29,12 @@ def send_new_password(person: pm.Person, project: str, new_psw: str):
         smtp.send_message(msg)
 
     return True
+
+
+def probe_job(job_id: str):
+    print(f'job_ausgefürt: {job_id=}')
+    deleted_job = delete_job_from_db(job_id)
+    print(f'{deleted_job=}')
 
 
 def send_remainder_deadline(person: pm.Person, plan_periods: list[pm.PlanPeriod]):

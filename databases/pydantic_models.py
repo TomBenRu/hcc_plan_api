@@ -168,6 +168,27 @@ class AvailDayShow(AvailDay):
 # --------------------------------------------------------------------------------------
 
 
+class RemainderDeadlineCreate(BaseModel):
+    plan_period: PlanPeriod
+    trigger: Optional[str]
+    run_date: datetime
+    func = Optional[str]
+    args: List = []
+
+    class Config:
+        orm_mode = True
+
+
+class RemainderDeadline(RemainderDeadlineCreate):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+# --------------------------------------------------------------------------------------
+
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str

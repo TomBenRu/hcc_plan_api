@@ -8,6 +8,7 @@ from pony.orm import Database, db_session, select, TransactionIntegrityError
 from pony.orm.core import Multiset, flush, commit
 from pydantic import EmailStr
 
+from databases.pony_models import RemainderDeadline
 from utilities import utils
 from .database import (Team, Person, PlanPeriod, Availables, AvailDay, Project)
 from .enums import TimeOfDay, AuthorizationTypes
@@ -229,6 +230,26 @@ def update_1_planperiod(planperiod: pm.PlanPeriod) -> pm.PlanPeriod:
 #         return [pm.PlanPeriod.from_orm(pp) for pp in not_feedbacked]
 
 
+def get_scheduler_jobs() -> list[pm.RemainderDeadline]:
+    with db_session:
+        jobs = RemainderDeadline.select()
+        return [pm.RemainderDeadline.from_orm(rd) for rd in jobs]
+
+
+def add_job_to_db(job: pm.RemainderDeadlineCreate):
+    with db_session:
+        new_remainder = RemainderDeadline(**job.dict())
+        return pm.RemainderDeadline.from_orm(new_remainder)
+
+
+def delete_job_from_db(job_id: str) -> pm.RemainderDeadline:
+    with db_session:
+        plan_period_db = PlanPeriod.get(UUID(job_id))
+        job_db_to_delete: RemainderDeadline = RemainderDeadline.get(plan_period=plan_period_db)
+        job_db_to_delete.delete()
+        return pm.RemainderDeadline.from_orm(job_db_to_delete)
+
+
 def get_user_by_id(user_id: UUID) -> pm.Person:
     with db_session:
         person = Person[user_id]
@@ -299,6 +320,11 @@ def create_new_plan_period(team_id: str, date_start: datetime.date | None, date_
         plan_period = PlanPeriod(start=date_start, end=date_end, deadline=deadline, notes=notes,
                                  team=Team.get(lambda t: t.id == UUID(team_id)))
         return pm.PlanPeriod.from_orm(plan_period)
+
+
+def get_planperiod(pp_id: UUID):
+    with db_session:
+        return PlanPeriod[pp_id]
 
 
 def delete_planperiod_from_team(planperiod_id: UUID):

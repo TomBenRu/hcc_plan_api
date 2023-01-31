@@ -3,7 +3,7 @@ from enum import Enum
 from pony.orm import Database, sql_debug
 
 # the models have to be imported for correct database mapping
-from .pony_models import (db_actors, Team, Person, PlanPeriod, Availables, AvailDay, Project)
+from .pony_models import (db_actors, Team, Person, PlanPeriod, Availables, AvailDay, Project, RemainderDeadline)
 
 import settings
 from .enum_converter import EnumConverter
