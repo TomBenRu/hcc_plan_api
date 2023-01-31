@@ -172,7 +172,7 @@ class RemainderDeadlineCreate(BaseModel):
     plan_period: PlanPeriod
     trigger: Optional[str]
     run_date: datetime
-    func = Optional[str]
+    func: Optional[str]
     args: List = []
 
     class Config:
