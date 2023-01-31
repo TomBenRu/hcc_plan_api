@@ -1,7 +1,7 @@
 from datetime import date
 from datetime import datetime
 from uuid import UUID
-from pony.orm import Database, PrimaryKey, Required, Set, Optional, composite_key, IntegrityError
+from pony.orm import Database, PrimaryKey, Required, Set, Optional, composite_key, IntegrityError, Json
 
 from databases.enums import TimeOfDay
 
@@ -145,4 +145,4 @@ class RemainderDeadline(db_actors.Entity):
     trigger = Required(str, default='date')
     run_date = Required(datetime)
     func = Optional(str)
-    args = Required(list, default=[])
+    args = Required(Json, default=[])
