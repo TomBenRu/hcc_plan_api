@@ -12,6 +12,7 @@ db_actors = Database()
 class CustomError(Exception):
     pass
 
+
 class Project(db_actors.Entity):
     id = PrimaryKey(UUID, auto=True)
     name = Required(str, 50, unique=True)

@@ -32,6 +32,28 @@ def send_new_password(person: pm.Person, project: str, new_psw: str):
     return True
 
 
+def send_remainder_confirmation(planperiod: pm.PlanPeriod, persons: list[pm.Person]):
+    text_empfaenger = ', '.join([f'{p.f_name} {p.l_name}' for p in persons])
+    send_to = planperiod.team.dispatcher.email
+    msg = EmailMessage()
+    msg['From'] = SEND_ADDRESS
+    msg['To'] = send_to
+    msg['Subject'] = 'hcc Remainder verschickt'
+    msg.set_content(
+        f'Hallo {planperiod.team.dispatcher.f_name} {planperiod.team.dispatcher.l_name},\n\n'
+        f'es wurden Remainder verschickt.\n'
+        f'Planungszeitraum: {planperiod.start.strftime("%d.%m.%y")} - {planperiod.end.strftime("%d.%m.%y")}\n'
+        f'Empfänger: {text_empfaenger}\n\n'
+        f'Team hcc-dispo'
+    )
+    with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(SEND_ADDRESS, SEND_PASSWORD)
+        smtp.send_message(msg)
+
+
 def send_remainder_deadline(plan_period_id: str):
     planperiod = get_planperiod(UUID(plan_period_id))
     persons = get_not_feedbacked_availables(plan_period_id)
@@ -60,4 +82,5 @@ def send_remainder_deadline(plan_period_id: str):
             smtp.login(SEND_ADDRESS, SEND_PASSWORD)
             smtp.send_message(msg)
     delete_job_from_db(plan_period_id)
+    send_remainder_confirmation(planperiod, persons)
     return True

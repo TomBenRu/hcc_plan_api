@@ -119,6 +119,7 @@ class PlanPeriodShow(PlanPeriod):
             if avail.person.id == actor_id:
                 return avail.notes
         return ''
+
     @property
     def all_days(self):
         delta: timedelta = self.end - self.start
