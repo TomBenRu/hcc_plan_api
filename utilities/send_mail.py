@@ -51,7 +51,8 @@ def send_remainder_deadline(plan_period_id: str):
                         f'Andernfalls solltest du das noch heute erledigen, damit ich dich bei der Planung der '
                         f'Einsätze berücksichtigen kann.\n\n'
                         f'{planperiod.team.dispatcher.f_name} {planperiod.team.dispatcher.l_name}\n'
-                        f'(Spielplanung {person.project.name})')
+                        f'(Spielplanung {person.project.name})'
+                        f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---')
         with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
             smtp.ehlo()
             smtp.starttls()
