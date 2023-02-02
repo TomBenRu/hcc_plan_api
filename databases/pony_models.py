@@ -148,4 +148,6 @@ class RemainderDeadline(db_actors.Entity):
     args = Required(Json, default=[])
 
 
-# todo: Damit eine Person an mehreren Projekten teilnehmen kann, ist eine Änderung in der Personklasse notwendig: Zum Einloggen wird ein eindeutiger Benutzername benötigt, welcher der Indentifier für das Projekt ist. Email muss nicht mehr eindeutig sein und ist lediglich für Benachrichtigungen notwendig.
+# todo: Damit eine Person an mehreren Projekten teilnehmen kann, ist eine Änderung in der Personklasse notwendig: Zum
+#  Einloggen wird ein eindeutiger Benutzername benötigt, welcher der Indentifier für das Projekt ist. Email muss
+#  nicht mehr eindeutig sein und ist lediglich für Benachrichtigungen notwendig.
