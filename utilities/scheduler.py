@@ -1,3 +1,4 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler({'apscheduler.job_defaults.max_instances': 20,
+                                 'apscheduler.job_defaults.misfire_grace_time': 600})
