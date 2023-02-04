@@ -20,7 +20,7 @@ def scheduler_startup():
     jobs: list[pm.APSchedulerJob] = get_scheduler_jobs()
     print(f'To load: {[asj.job for asj in jobs]}')
     for job in jobs:
-        scheduler.add_job(job)
+        scheduler.add_job(**job.job)
 
 
 app.include_router(index.router)

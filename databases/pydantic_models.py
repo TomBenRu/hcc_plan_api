@@ -184,11 +184,11 @@ class RemainderDeadlineCreate(BaseModel):
 
 class APSchedulerJob(BaseModel):
     plan_period: PlanPeriod
-    job: apscheduler.job.Job
+    job: dict
 
     @validator('job', pre=True, allow_reuse=True)
     def pickled_job_to_job(cls, pickled_job):
-        return pickle.loads(pickled_job)
+        return pickle.loads(pickled_job).__getstate__()
 
     class Config:
         orm_mode = True
