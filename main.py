@@ -6,7 +6,6 @@ from fastapi.staticfiles import StaticFiles
 from databases.services import get_scheduler_jobs
 from routers import auth, actors, supervisor, admin, dispatcher, index
 from utilities.scheduler import scheduler
-from utilities.send_mail import send_remainder_deadline
 import databases.pydantic_models as pm
 
 app = FastAPI()
