@@ -105,7 +105,7 @@ class PlanPeriod(db_actors.Entity):
     last_modified = Required(datetime, default=lambda: datetime.utcnow())
     team = Required(Team)
     availabless = Set(Availables)
-    remainder_deadline = Optional('RemainderDeadline')
+    remainder_deadline = Optional('APSchedulerJob')
 
     @property
     def dispatcher(self):
@@ -140,12 +140,9 @@ class AvailDay(db_actors.Entity):
         self.last_modified = datetime.utcnow()
 
 
-class RemainderDeadline(db_actors.Entity):
+class APSchedulerJob(db_actors.Entity):
     plan_period = Required(PlanPeriod)
-    trigger = Required(str, default='date')
-    run_date = Required(datetime)
-    func = Optional(str)
-    args = Required(Json, default=[])
+    job = Required(bytes)
 
 
 # todo: Damit eine Person an mehreren Projekten teilnehmen kann, ist eine Änderung in der Personklasse notwendig: Zum

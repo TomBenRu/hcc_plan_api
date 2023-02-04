@@ -1,7 +1,9 @@
+import pickle
 from datetime import date, datetime, timedelta
 from typing import Optional, Set, Any, List, Union
 from uuid import UUID
 
+import apscheduler.job
 from pydantic import BaseModel, Field, EmailStr, conint, validator
 from .enums import TimeOfDay
 
@@ -180,8 +182,13 @@ class RemainderDeadlineCreate(BaseModel):
         orm_mode = True
 
 
-class RemainderDeadline(RemainderDeadlineCreate):
-    id: int
+class APSchedulerJob(BaseModel):
+    plan_period: PlanPeriod
+    job: apscheduler.job.Job
+
+    @validator('job', pre=True, allow_reuse=True)
+    def pickled_job_to_job(cls, pickled_job):
+        return pickle.loads(pickled_job)
 
     class Config:
         orm_mode = True

@@ -1,14 +1,16 @@
 import datetime
+import pickle
 import secrets
 import time
 from typing import Type, Optional, Union
 from uuid import UUID
 
+import apscheduler.job
 from pony.orm import Database, db_session, select, TransactionIntegrityError
 from pony.orm.core import Multiset, flush, commit
 from pydantic import EmailStr
 
-from databases.pony_models import RemainderDeadline
+from databases.pony_models import APSchedulerJob
 from utilities import utils
 from .database import (Team, Person, PlanPeriod, Availables, AvailDay, Project)
 from .enums import TimeOfDay, AuthorizationTypes
@@ -230,28 +232,30 @@ def get_not_feedbacked_availables(plan_period_id: str) -> list[pm.Person]:
         return [pm.Person.from_orm(p) for p in persons_without_availables]
 
 
-def get_scheduler_jobs() -> list[pm.RemainderDeadline]:
+def get_scheduler_jobs() -> list[pm.APSchedulerJob]:
     with db_session:
-        jobs = RemainderDeadline.select()
-        return [pm.RemainderDeadline.from_orm(rd) for rd in jobs]
+        jobs_db = APSchedulerJob.select()
+        jobs = [pm.APSchedulerJob.from_orm(job_db) for job_db in jobs_db]
+
+        return jobs
 
 
-def add_job_to_db(job: pm.RemainderDeadlineCreate):
+def add_job_to_db(job: apscheduler.job.Job):
     with db_session:
-        print(f'add_job_to_db: {job.run_date=}')
-        new_remainder = RemainderDeadline(plan_period=job.plan_period.id, trigger=job.trigger, run_date=job.run_date,
-                                          args=job.args)
-        return pm.RemainderDeadline.from_orm(new_remainder)
+        print(f'add_job_to_db: {job=}')
+        planperiod_db = PlanPeriod[UUID(job.id)]
+        pickled_job = pickle.dumps(job)
+        APSchedulerJob(plan_period=planperiod_db, job=pickled_job)
 
 
-def delete_job_from_db(job_id: str) -> list[pm.RemainderDeadline]:
+def delete_job_from_db(job_id: str):
     with db_session:
         plan_period_db = PlanPeriod.get(id=UUID(job_id))
-        jobs_db_to_delete = RemainderDeadline.select(lambda rd: rd.plan_period == plan_period_db)
+        jobs_db_to_delete = APSchedulerJob.select(lambda asp: asp.plan_period == plan_period_db)
         for job_db_to_delete in jobs_db_to_delete:
             print(f'{job_db_to_delete=}')
             job_db_to_delete.delete()
-        jobs_db_to_delete = [pm.RemainderDeadline.from_orm(jd) for jd in jobs_db_to_delete]
+        jobs_db_to_delete = [pm.APSchedulerJob.from_orm(jd) for jd in jobs_db_to_delete]
         return jobs_db_to_delete
 
 

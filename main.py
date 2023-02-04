@@ -18,11 +18,10 @@ app.mount('/static', StaticFiles(directory='static'), name='static')
 def scheduler_startup():
     scheduler.start()
     print('scheduler started')
-    jobs: list[pm.RemainderDeadline] = get_scheduler_jobs()
-    print(f'{[(j.plan_period.id, j.run_date) for j in jobs]}')
+    jobs: list[pm.APSchedulerJob] = get_scheduler_jobs()
+    print(f'To load: {[asj.job for asj in jobs]}')
     for job in jobs:
-        scheduler.add_job(func=send_remainder_deadline, trigger=job.trigger, run_date=job.run_date,
-                          id=str(job.plan_period.id), args=job.args)
+        scheduler.add_job(job)
 
 
 app.include_router(index.router)

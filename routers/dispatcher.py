@@ -59,10 +59,9 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
             pass
         run_date = datetime.datetime(new_plan_period.deadline.year, new_plan_period.deadline.month,
                                      new_plan_period.deadline.day) - datetime.timedelta(days=1)
-        scheduler.add_job(func=send_remainder_deadline, trigger='date', run_date=run_date, id=str(new_plan_period.id),
+        job = scheduler.add_job(func=send_remainder_deadline, trigger='date', run_date=run_date, id=str(new_plan_period.id),
                           args=[str(new_plan_period.id)])
-        add_job_to_db(pm.RemainderDeadlineCreate(plan_period=get_planperiod(new_plan_period.id), trigger='date',
-                                                 run_date=run_date, args=[str(new_plan_period.id)]))
+        add_job_to_db(job=job)
 
     return new_plan_period
 
