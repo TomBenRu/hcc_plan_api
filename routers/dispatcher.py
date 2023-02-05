@@ -109,6 +109,7 @@ def update_planperiod(planperiod: pm.PlanPeriod, access_token: str = Depends(oau
     try:
         job = scheduler.reschedule_job(str(planperiod.id), trigger='date', run_date=run_date)
         update_job_in_db(job=job)
+        print(f'rescheduled_jobs: {[j.__getstate__() for j in scheduler.get_jobs()]}')
     except Exception as e:
         print(f'Fehler: {e}')
 
