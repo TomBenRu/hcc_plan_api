@@ -8,8 +8,7 @@ import databases.pydantic_models as pm
 from databases.services import (create_new_plan_period, get_actors_in_dispatcher_teams,
                                 get_planperiods_last_recent_date, get_project_from_user_id, get_teams_of_dispatcher,
                                 get_planperiods_of_team, update_1_planperiod, delete_planperiod_from_team,
-                                get_avail_days_from_planperiod, add_job_to_db, get_planperiod, delete_job_from_db,
-                                get_not_feedbacked_availables, update_job_in_db)
+                                get_avail_days_from_planperiod, add_job_to_db, delete_job_from_db, update_job_in_db)
 from oauth2_authentication import verify_access_token, oauth2_scheme
 from utilities.scheduler import scheduler
 from utilities.send_mail import send_remainder_deadline
@@ -52,11 +51,11 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
         try:
             scheduler.remove_job(str(new_plan_period.id))
         except Exception as e:
-            print(f'Fehler: {e}')
+            print(f'Job nicht vorhanden: {e}')
         try:
             delete_job_from_db(str(new_plan_period.id))
         except Exception as e:
-            print(f'Fehler: {e}')
+            print(f'Job nicht in DB vorhanden: {e}')
         run_date = datetime.datetime(new_plan_period.deadline.year, new_plan_period.deadline.month,
                                      new_plan_period.deadline.day) - datetime.timedelta(days=1)
         job = scheduler.add_job(func=send_remainder_deadline, trigger='date', run_date=run_date,
