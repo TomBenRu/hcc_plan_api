@@ -107,7 +107,7 @@ def update_planperiod(planperiod: pm.PlanPeriod, access_token: str = Depends(oau
     run_date = datetime.datetime(planperiod.deadline.year, planperiod.deadline.month,
                                  planperiod.deadline.day) - datetime.timedelta(days=1)
     try:
-        job = scheduler.modify_job(str(planperiod.id), run_date=run_date)
+        job = scheduler.modify_job(str(planperiod.id), {'run_date': run_date, 'next_run_time': run_date})
         update_job_in_db(job=job)
     except Exception as e:
         print(f'Fehler: {e}')
