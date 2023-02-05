@@ -83,10 +83,10 @@ def delete_planperiod(planperiod_id: str, access_token: str = Depends(oauth2_sch
         scheduler.remove_job(planperiod_id)
     except Exception as e:
         print(f'Fehler: {e}')
-    try:
-        delete_job_from_db(planperiod_id)
-    except Exception as e:
-        print(f'Fehler: {e}')
+    # try:
+    #     delete_job_from_db(planperiod_id)
+    # except Exception as e:
+    #     print(f'Fehler: {e}')
 
     return deleted_planperiod
 

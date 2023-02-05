@@ -105,7 +105,7 @@ class PlanPeriod(db_actors.Entity):
     last_modified = Required(datetime, default=lambda: datetime.utcnow())
     team = Required(Team)
     availabless = Set(Availables)
-    remainder_deadline = Optional('APSchedulerJob')
+    apscheduler_job = Optional('APSchedulerJob', cascade_delete=True)
 
     @property
     def dispatcher(self):
