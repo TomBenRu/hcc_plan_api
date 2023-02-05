@@ -182,6 +182,7 @@ def get_open_plan_periods(user_id: UUID) -> list[pm.PlanPerEtFilledIn]:
 
             plan_p_et_filled_in.append(pm.PlanPerEtFilledIn(plan_period=pm.PlanPeriodShow.from_orm(pp),
                                                             filled_in=filled_in))
+            plan_p_et_filled_in.sort(key=lambda pp_e_fi: pp_e_fi.plan_period.start)
     return plan_p_et_filled_in
 
 
