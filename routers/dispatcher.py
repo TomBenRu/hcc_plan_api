@@ -59,8 +59,8 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
             pass
         run_date = datetime.datetime(new_plan_period.deadline.year, new_plan_period.deadline.month,
                                      new_plan_period.deadline.day) - datetime.timedelta(days=1)
-        job = scheduler.add_job(func=send_remainder_deadline, trigger='date', run_date=run_date, id=str(new_plan_period.id),
-                          args=[str(new_plan_period.id)])
+        job = scheduler.add_job(func=send_remainder_deadline, trigger='date', run_date=run_date,
+                                id=str(new_plan_period.id), args=[str(new_plan_period.id)])
         add_job_to_db(job=job)
 
     return new_plan_period
@@ -162,7 +162,7 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
     return avail_days
 
 
-# @router.post('/create_remainder', response_model=pm.RemainderDeadline)
+# @router.post('/create_remainder', response_model=pm.APSchedulerJob)
 # def create_remainder(planperiod_id: str, date: datetime.date):
 #     print(f'in create_ramainder: {date}')
 #     try:
@@ -173,12 +173,10 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
 #         delete_job_from_db(planperiod_id)
 #     except:
 #         pass
-#     scheduler.add_job(func=send_remainder_deadline, trigger='date',
+#     job = scheduler.add_job(func=send_remainder_deadline, trigger='date',
 #                       run_date=date, id=planperiod_id, args=[planperiod_id])
 #     planpriod = get_planperiod(UUID(planperiod_id))
-#     new_job = add_job_to_db(pm.RemainderDeadlineCreate(plan_period=planpriod, trigger='date',
-#                                                        run_date=datetime.datetime(year=date.year, month=date.month, day=date.day),
-#                                                        args=[planperiod_id]))
+#     new_job = add_job_to_db(job)
 #     return new_job
 
 
