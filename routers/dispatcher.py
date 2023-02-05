@@ -9,7 +9,7 @@ from databases.services import (create_new_plan_period, get_actors_in_dispatcher
                                 get_planperiods_last_recent_date, get_project_from_user_id, get_teams_of_dispatcher,
                                 get_planperiods_of_team, update_1_planperiod, delete_planperiod_from_team,
                                 get_avail_days_from_planperiod, add_job_to_db, get_planperiod, delete_job_from_db,
-                                get_not_feedbacked_availables)
+                                get_not_feedbacked_availables, update_job_in_db)
 from oauth2_authentication import verify_access_token, oauth2_scheme
 from utilities.scheduler import scheduler
 from utilities.send_mail import send_remainder_deadline
@@ -51,12 +51,12 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
     if remainder:
         try:
             scheduler.remove_job(str(new_plan_period.id))
-        except:
-            pass
+        except Exception as e:
+            print(f'Fehler: {e}')
         try:
             delete_job_from_db(str(new_plan_period.id))
-        except:
-            pass
+        except Exception as e:
+            print(f'Fehler: {e}')
         run_date = datetime.datetime(new_plan_period.deadline.year, new_plan_period.deadline.month,
                                      new_plan_period.deadline.day) - datetime.timedelta(days=1)
         job = scheduler.add_job(func=send_remainder_deadline, trigger='date', run_date=run_date,
@@ -78,6 +78,16 @@ def delete_planperiod(planperiod_id: str, access_token: str = Depends(oauth2_sch
         deleted_planperiod = delete_planperiod_from_team(planperiod_id=UUID(planperiod_id))
     except Exception as e:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Error: {e}')
+
+    try:
+        scheduler.remove_job(planperiod_id)
+    except Exception as e:
+        print(f'Fehler: {e}')
+    try:
+        delete_job_from_db(planperiod_id)
+    except Exception as e:
+        print(f'Fehler: {e}')
+
     return deleted_planperiod
 
 
@@ -93,6 +103,15 @@ def update_planperiod(planperiod: pm.PlanPeriod, access_token: str = Depends(oau
         planperiod_updated = update_1_planperiod(planperiod)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Error: {e}')
+
+    run_date = datetime.datetime(planperiod.deadline.year, planperiod.deadline.month,
+                                 planperiod.deadline.day) - datetime.timedelta(days=1)
+    try:
+        job = scheduler.modify_job(str(planperiod.id), run_date=run_date)
+        update_job_in_db(job=job)
+    except Exception as e:
+        print(f'Fehler: {e}')
+
     return planperiod_updated
 
 

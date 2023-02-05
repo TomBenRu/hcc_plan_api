@@ -248,6 +248,12 @@ def add_job_to_db(job: apscheduler.job.Job):
         APSchedulerJob(plan_period=planperiod_db, job=pickled_job)
 
 
+def update_job_in_db(job: apscheduler.job.Job):
+    with db_session:
+        job_db = APSchedulerJob.get(lambda j: j.plan_period == str(job.id))
+        job_db.job = pickle.dumps(job)
+
+
 def delete_job_from_db(job_id: str):
     with db_session:
         plan_period_db = PlanPeriod.get(id=UUID(job_id))
