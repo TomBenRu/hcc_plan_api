@@ -250,7 +250,7 @@ def add_job_to_db(job: apscheduler.job.Job):
 
 def update_job_in_db(job: apscheduler.job.Job):
     with db_session:
-        job_db = APSchedulerJob.get(lambda j: j.plan_period == str(job.id))
+        job_db = APSchedulerJob.get(lambda j: str(j.plan_period.id) == job.id)
         job_db.job = pickle.dumps(job)
 
 
