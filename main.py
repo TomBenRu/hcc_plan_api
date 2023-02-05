@@ -21,6 +21,7 @@ def scheduler_startup():
     print(f'To load: {[asj.job for asj in jobs]}')
     for job in jobs:
         scheduler.add_job(**job.job)
+        print([j.__getstate__() for j in scheduler.get_jobs()])
 
 
 app.include_router(index.router)
