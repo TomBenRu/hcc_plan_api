@@ -8,7 +8,8 @@ import databases.pydantic_models as pm
 from databases.services import (create_new_plan_period, get_actors_in_dispatcher_teams,
                                 get_planperiods_last_recent_date, get_project_from_user_id, get_teams_of_dispatcher,
                                 get_planperiods_of_team, update_1_planperiod, delete_planperiod_from_team,
-                                get_avail_days_from_planperiod, add_job_to_db, delete_job_from_db, update_job_in_db)
+                                get_avail_days_from_planperiod, add_job_to_db, delete_job_from_db, update_job_in_db,
+                                get_not_feedbacked_availables)
 from oauth2_authentication import verify_access_token, oauth2_scheme
 from utilities.scheduler import scheduler
 from utilities.send_mail import send_remainder_deadline
@@ -175,6 +176,18 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
     user_id = token_data.id
     avail_days = get_avail_days_from_planperiod(planperiod_id=UUID(planperiod_id))
     return avail_days
+
+
+# nur fürs Testen:
+@router.get('/not-feedbacked')
+def not_feedbacked_availables(planperiod_id: str, access_token: str = Depends(oauth2_scheme)):
+    try:
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials - {e}')
+    user_id = token_data.id
+    not_feedbacked: list[pm.Person] = get_not_feedbacked_availables(planperiod_id)
+    return {'plan_period_id': planperiod_id, 'persons': not_feedbacked}
 
 
 # @router.post('/create_remainder', response_model=pm.APSchedulerJob)

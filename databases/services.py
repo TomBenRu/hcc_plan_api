@@ -227,7 +227,11 @@ def update_1_planperiod(planperiod: pm.PlanPeriod) -> pm.PlanPeriod:
 
 def get_not_feedbacked_availables(plan_period_id: str) -> list[pm.Person]:
     with db_session:
-        persons_with_availables = list(PlanPeriod[UUID(plan_period_id)].availabless.person)
+        # persons_with_availables = list(PlanPeriod[UUID(plan_period_id)].availabless.person)
+        # Bessere Alternative: alle Personen werden gelistet, die Einträge in Terminen oder Notes  gemacht haben,
+        # anstatt alle Personen mit availables.
+        persons_with_availables = list([availables.person for availables in PlanPeriod[UUID(plan_period_id)].availabless
+                                        if (availables.notes or availables.avail_days)])
         persons_without_availables = [person for person in PlanPeriod[UUID(plan_period_id)].team.actors
                                       if person not in persons_with_availables]
         return [pm.Person.from_orm(p) for p in persons_without_availables]
@@ -357,3 +361,7 @@ def change_status_planperiod(plan_period_id: int, closed: bool, dispatcher_id: i
 
 if __name__ == '__main__':
     pass
+
+
+# todo: get_not_feedbacked_availables verbessern, sodass alle personen gelistet werden, die noch keine Einträge
+#  in Terminen oder Notes gemacht haben.
