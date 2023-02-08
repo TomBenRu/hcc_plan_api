@@ -28,6 +28,7 @@ class PersonCreate(BaseModel):
     f_name: str
     l_name: str
     email: EmailStr
+    username: str
     password: Optional[str]
     project: Optional[Project]
 
