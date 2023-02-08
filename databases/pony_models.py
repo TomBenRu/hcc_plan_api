@@ -34,6 +34,7 @@ class Person(db_actors.Entity):
     f_name = Required(str, 50)
     l_name = Required(str, 50)
     email = Required(str, 50, unique=True)
+    username = Required(str, 50, unique=True)
     password = Required(str)
     created_at = Required(date, default=lambda: date.today())
     last_modified = Required(datetime, default=lambda: datetime.utcnow())
