@@ -18,6 +18,7 @@ class Project(db_actors.Entity):
     name = Required(str, 50, unique=True)
     created_at = Required(date, default=lambda: date.today())
     last_modified = Required(datetime, precision=0, default=lambda: datetime.utcnow())
+    active = Required(bool, default=False)
     persons = Set('Person', reverse='project')
     admin = Optional('Person', reverse='project_of_admin')
 

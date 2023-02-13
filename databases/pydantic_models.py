@@ -18,6 +18,7 @@ class ProjectCreate(BaseModel):
 
 class Project(ProjectCreate):
     id: UUID
+    active: bool
 
 
 class ProjectShow(Project):
