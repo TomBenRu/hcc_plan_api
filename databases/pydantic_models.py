@@ -11,6 +11,7 @@ from .enums import TimeOfDay
 class ProjectCreate(BaseModel):
     name: str
     # admin: Optional['Person']
+    active: bool
 
     class Config:
         orm_mode = True
@@ -18,7 +19,6 @@ class ProjectCreate(BaseModel):
 
 class Project(ProjectCreate):
     id: UUID
-    active: bool
 
 
 class ProjectShow(Project):

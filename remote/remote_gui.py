@@ -509,11 +509,20 @@ class CreateNewProject(CommonTopLevel):
         self.entry_email_admin = tk.Entry(self.frame_input, width=50)
         self.entry_email_admin.grid(row=3, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
 
+        self.lb_username_admin = tk.Label(self.frame_input, text='Username Admin:')
+        self.lb_username_admin.grid(row=4, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.entry_username_admin = PlaceholderEntry(self.frame_input, width=50,
+                                                     placeholder='Bitte einen Nutzernamen einfügen.')
+        self.entry_username_admin.grid(row=4, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
         self.lb_entry_password_admin = tk.Label(self.frame_input, text='Passwort Admin:')
-        self.lb_entry_password_admin.grid(row=4, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.lb_entry_password_admin.grid(row=5, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
         self.entry_password_admin = PlaceholderEntry(master=self.frame_input, width=50, show='*',
                                                      placeholder='Wenn leer: Random Passwort wird erzeugt.')
-        self.entry_password_admin.grid(row=4, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
+        self.entry_password_admin.grid(row=5, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
+        self.var_chk_active = tk.BooleanVar(value=True)
+        self.chk_active = tk.Checkbutton(self.frame_input, text='Soll das Projekt auf activ gesetzt werden?',
+                                         variable=self.var_chk_active)
+        self.chk_active.grid(row=6, column=0, columnspan=2, pady=(5, 5))
 
         self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=20, command=self.new_project)
         self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 10))
@@ -522,8 +531,9 @@ class CreateNewProject(CommonTopLevel):
 
     def new_project(self):
         person = pm.PersonCreate(f_name=self.entry_fname_admin.get(), l_name=self.entry_lname_admin.get(),
-                                 email=EmailStr(self.entry_email_admin.get()), password=self.entry_password_admin.get())
-        project = pm.ProjectCreate(name=self.entry_projectname.get())
+                                 email=EmailStr(self.entry_email_admin.get()), password=self.entry_password_admin.get(),
+                                 username=self.entry_username_admin.get())
+        project = pm.ProjectCreate(name=self.entry_projectname.get(), active=self.var_chk_active.get())
 
         token = pm.Token(access_token=self.access_token, token_type='bearer')
         response = requests.post(f'{self.parent.host}/su/account',
