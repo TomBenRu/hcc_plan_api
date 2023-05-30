@@ -109,6 +109,13 @@ def get_all_persons(admin_id: UUID) -> list[pm.PersonShow]:
         return [pm.PersonShow.from_orm(p) for p in persons]
 
 
+@db_session
+def get_persons__from_plan_period(plan_period_id: UUID) -> list[pm.PersonShow]:
+    team_db = PlanPeriod.get_for_update(id=plan_period_id)
+    return [pm.PersonShow.from_orm(p) for p in team_db.actors]
+
+
+
 def get_all_project_teams(admin_id: UUID) -> list[pm.Team]:
     with db_session:
         try:
@@ -287,6 +294,12 @@ def get_avail_days_from_planperiod(planperiod_id: UUID) -> dict[UUID, dict[str, 
         avail_days = {availables.person.id: {'notes': availables.notes, 'days': [pm.AvailDay.from_orm(av_d) for av_d in list(availables.avail_days)]}
                       for availables in availabless}
         return avail_days
+
+
+@db_session
+def get_avail_days__from_actor_planperiod(person_id, planperiod_id) -> list[pm.AvailDayShow]:
+    avail_days = Availables.get_for_update(lambda av: av.person.id == person_id and av.plan_period.id == planperiod_id)
+    return [pm.AvailDayShow.from_orm(ad) for ad in avail_days]
 
 
 def create_new_team(team: pm.TeamCreate, person_id: str):

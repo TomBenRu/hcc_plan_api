@@ -436,6 +436,7 @@ class Login(CommonTopLevel):
         password = self.entry_password.get()
 
         response = requests.post(f'{self.parent.host}/token', data={'username': email, 'password': password})
+        print(response)
         try:
             payload = jwt.decode(response.json()['access_token'], options={"verify_signature": False})
         except KeyError as e:

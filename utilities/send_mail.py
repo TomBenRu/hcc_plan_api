@@ -4,7 +4,8 @@ from uuid import UUID
 
 import databases.pydantic_models as pm
 import settings
-from databases.services import delete_job_from_db, get_not_feedbacked_availables, get_planperiod
+from databases.services import delete_job_from_db, get_not_feedbacked_availables, get_planperiod, \
+    get_persons__from_plan_period, get_avail_days__from_actor_planperiod
 
 SEND_ADDRESS = settings.settings.send_address
 SEND_PASSWORD = settings.settings.send_password
@@ -64,8 +65,8 @@ def send_remainder_deadline(plan_period_id: str):
         msg['From'] = SEND_ADDRESS
         msg['To'] = send_to
         msg['Subject'] = f'Remainder: Abgabe deiner Spieloptionen'
-        msg.set_content(f'Hallo {person.f_name} {person.l_name}, '
-                        f'\n\n heute ist die Deadline für die Abgabe deiner Spieloptionen.\n'
+        msg.set_content(f'Hallo {person.f_name} {person.l_name},\n\n'
+                        f'heute ist die Deadline für die Abgabe deiner Spieloptionen.\n'
                         f'Es sind noch keine Rückmeldungen über den Online-Planungsservice von {person.project.name} '
                         f'für die folgende Planung eingegangen:\n\n'
                         f'- {text_planperiod}.\n\n'
@@ -73,7 +74,7 @@ def send_remainder_deadline(plan_period_id: str):
                         f'Andernfalls solltest du das noch heute erledigen, damit ich dich bei der Planung der '
                         f'Einsätze berücksichtigen kann.\n\n'
                         f'{planperiod.team.dispatcher.f_name} {planperiod.team.dispatcher.l_name}\n'
-                        f'(Spielplanung {person.project.name})'
+                        f'(Spielplanung {person.project.name})\n'
                         f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---')
         with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
             smtp.ehlo()
@@ -83,4 +84,35 @@ def send_remainder_deadline(plan_period_id: str):
             smtp.send_message(msg)
     delete_job_from_db(plan_period_id)
     send_remainder_confirmation(planperiod, persons)
+    return True
+
+
+def send_avail_days_to_actors(plan_period_id: str):
+    plan_period = get_planperiod(UUID(plan_period_id))
+    persons = get_persons__from_plan_period(UUID(plan_period_id))
+    time_of_day_explicit = {'v': 'Vormittag', 'n': 'Nachmittag', 'g': 'Ganztag'}
+    for person in persons:
+        if person.email != 'mail@thomas-ruff.de':
+            continue
+        avail_days = get_avail_days__from_actor_planperiod(person.id, plan_period_id)
+        avail_days_txt = '\n'.join([f'{ad.day.strftime("%d.%m")} ({time_of_day_explicit[ad.time_of_day.value]})'
+                                    for ad in avail_days])
+        send_to = person.email
+        msg = EmailMessage()
+        msg['From'] = SEND_ADDRESS
+        msg['To'] = send_to
+        msg['Subject'] = f'Deine Spieloptionen: Planung von ' \
+                         f'{plan_period.start.strftime("%d.%m.%Y")}-{plan_period.end.strftime("%d.%m.%Y")}'
+        msg.set_content(f'Hallo {person.f_name} {person.l_name},\n\n'
+                        f'du hast folgende Tage/Zeiten angegeben, an denen du verfügbar bist:\n'
+                        f'{avail_days_txt}\n\n'
+                        f'{plan_period.team.dispatcher.f_name} {plan_period.team.dispatcher.l_name}\n'
+                        f'(Spielplanung {person.project.name})\n'
+                        f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---')
+        with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(SEND_ADDRESS, SEND_PASSWORD)
+            smtp.send_message(msg)
     return True

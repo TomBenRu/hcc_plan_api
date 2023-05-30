@@ -12,7 +12,7 @@ from databases.services import (create_new_plan_period, get_actors_in_dispatcher
                                 get_not_feedbacked_availables)
 from oauth2_authentication import verify_access_token, oauth2_scheme
 from utilities.scheduler import scheduler
-from utilities.send_mail import send_remainder_deadline
+from utilities.send_mail import send_remainder_deadline, send_avail_days_to_actors
 
 router = APIRouter(prefix='/dispatcher', tags=['Dispatcher'])
 
@@ -58,7 +58,7 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
         except Exception as e:
             print(f'Job nicht in DB vorhanden: {e}')
         run_date = datetime.datetime(new_plan_period.deadline.year, new_plan_period.deadline.month,
-                                     new_plan_period.deadline.day) - datetime.timedelta(days=1)
+                                     new_plan_period.deadline.day) #  - datetime.timedelta(days=1)
         job = scheduler.add_job(func=send_remainder_deadline, trigger='date', run_date=run_date,
                                 id=str(new_plan_period.id), args=[str(new_plan_period.id)])
         add_job_to_db(job=job)
@@ -108,6 +108,9 @@ def update_planperiod(planperiod: pm.PlanPeriod, access_token: str = Depends(oau
         print(f'rescheduled_jobs: {[j.__getstate__() for j in scheduler.get_jobs()]}')
     except Exception as e:
         print(f'Fehler: {e}')
+
+    if planperiod_updated.closed:
+        send_avail_days_to_actors(str(planperiod.id))
 
     return planperiod_updated
 

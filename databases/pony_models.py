@@ -50,7 +50,6 @@ class Person(db_actors.Entity):
     def before_update(self):
         """Wenn sich der Wert von team_of_actor geändert hat, werden die aktuellen availables-Eiträge
         der Person gelöscht. die verbundenen avail_day-Einträge werden dann automatisch gelöscht."""
-        self.last_modified = datetime.utcnow()
         old_val = self._dbvals_.get(Person.team_of_actor)
         new_val = self.team_of_actor
         if new_val != old_val:
