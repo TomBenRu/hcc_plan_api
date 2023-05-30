@@ -94,7 +94,7 @@ def send_avail_days_to_actors(plan_period_id: str):
     for person in persons:
         if person.email != 'mail@thomas-ruff.de':
             continue
-        avail_days = get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id))
+        avail_days = sorted(get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id)), key=lambda x: x.day)
         if avail_days:
             avail_days_txt = '\n'.join([f'{ad.day.strftime("%d.%m.%Y")} ({time_of_day_explicit[ad.time_of_day.value]})'
                                         for ad in avail_days])
@@ -108,8 +108,8 @@ def send_avail_days_to_actors(plan_period_id: str):
                          f'{plan_period.start.strftime("%d.%m.%Y")}-{plan_period.end.strftime("%d.%m.%Y")}'
         msg.set_content(f'Hallo {person.f_name} {person.l_name},\n\n'
                         f'für den im Betreff genannten Planungszeitraum können '
-                        f'keine Spieloptionen mehr abgegeben werden.'
-                        f'du hast folgende Tage/Zeiten angegeben, an denen du verfügbar bist:\n\n'
+                        f'keine Spieloptionen mehr abgegeben werden.\n'
+                        f'Du hast folgende Tage/Zeiten angegeben, an denen du verfügbar bist:\n\n'
                         f'{avail_days_txt}\n\n'
                         f'{plan_period.team.dispatcher.f_name} {plan_period.team.dispatcher.l_name}\n'
                         f'(Spielplanung {person.project.name})\n'
