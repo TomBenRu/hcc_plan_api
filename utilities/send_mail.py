@@ -94,7 +94,7 @@ def send_avail_days_to_actors(plan_period_id: str):
     for person in persons:
         if person.email != 'mail@thomas-ruff.de':
             continue
-        avail_days = get_avail_days__from_actor_planperiod(person.id, plan_period_id)
+        avail_days = get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id))
         avail_days_txt = '\n'.join([f'{ad.day.strftime("%d.%m")} ({time_of_day_explicit[ad.time_of_day.value]})'
                                     for ad in avail_days])
         send_to = person.email
