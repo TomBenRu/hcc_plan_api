@@ -298,9 +298,6 @@ def get_avail_days_from_planperiod(planperiod_id: UUID) -> dict[UUID, dict[str, 
 
 @db_session
 def get_avail_days__from_actor_planperiod(person_id, planperiod_id) -> list[pm.AvailDayShow]:
-    print('###########################################################################################################')
-    print(f'{person_id=}, {planperiod_id=}')
-    print('###########################################################################################################')
     availables = Availables.get_for_update(lambda av: av.person.id == person_id and av.plan_period.id == planperiod_id)
     return [pm.AvailDayShow.from_orm(ad) for ad in availables.avail_days]
 

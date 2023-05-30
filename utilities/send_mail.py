@@ -92,8 +92,6 @@ def send_avail_days_to_actors(plan_period_id: str):
     persons = get_persons__from_plan_period(UUID(plan_period_id))
     time_of_day_explicit = {'v': 'Vormittag', 'n': 'Nachmittag', 'g': 'Ganztag'}
     for person in persons:
-        if person.email != 'mail@thomas-ruff.de':
-            continue
         avail_days = sorted(get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id)), key=lambda x: x.day)
         if avail_days:
             avail_days_txt = '\n'.join([f'{ad.day.strftime("%d.%m.%Y")} ({time_of_day_explicit[ad.time_of_day.value]})'
