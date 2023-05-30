@@ -111,7 +111,7 @@ def get_all_persons(admin_id: UUID) -> list[pm.PersonShow]:
 
 @db_session
 def get_persons__from_plan_period(plan_period_id: UUID) -> list[pm.PersonShow]:
-    team_db = PlanPeriod.get_for_update(id=plan_period_id)
+    team_db = PlanPeriod.get_for_update(id=plan_period_id).team
     return [pm.PersonShow.from_orm(p) for p in team_db.actors]
 
 
