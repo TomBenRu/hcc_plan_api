@@ -301,8 +301,8 @@ def get_avail_days__from_actor_planperiod(person_id, planperiod_id) -> list[pm.A
     print('###########################################################################################################')
     print(f'{person_id=}, {planperiod_id=}')
     print('###########################################################################################################')
-    avail_days = Availables.get_for_update(lambda av: av.person.id == person_id and av.plan_period.id == planperiod_id)
-    return [pm.AvailDayShow.from_orm(ad) for ad in avail_days]
+    availables = Availables.get_for_update(lambda av: av.person.id == person_id and av.plan_period.id == planperiod_id)
+    return [pm.AvailDayShow.from_orm(ad) for ad in availables.avail_days]
 
 
 def create_new_team(team: pm.TeamCreate, person_id: str):
