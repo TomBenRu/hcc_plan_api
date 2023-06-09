@@ -304,7 +304,7 @@ def get_avail_days__from_actor_planperiod(person_id, planperiod_id) -> list[pm.A
     print(f'{person.f_name} {person.l_name}:\n{availables=}')
     print('-----------------------------------------------------------------------------------------------------------')
     if not availables:
-        return []
+        return
     return [pm.AvailDayShow.from_orm(ad) for ad in availables.avail_days]
 
 

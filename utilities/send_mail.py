@@ -91,8 +91,13 @@ def send_avail_days_to_actors(plan_period_id: str):
     plan_period = get_planperiod(UUID(plan_period_id))
     persons = get_persons__from_plan_period(UUID(plan_period_id))
     time_of_day_explicit = {'v': 'Vormittag', 'n': 'Nachmittag', 'g': 'Ganztag'}
+    persons_with_availables: list[tuple[pm.PersonShow, list[pm.AvailDayShow]]] = []
     for person in persons:
-        avail_days = sorted(get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id)), key=lambda x: x.day)
+        avail_days_from_service = get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id))
+        if avail_days_from_service is None:
+            continue
+        avail_days = sorted(avail_days_from_service, key=lambda x: x.day)
+        persons_with_availables.append((person, avail_days))
         if avail_days:
             avail_days_txt = '\n'.join([f'{ad.day.strftime("%d.%m.%Y")} ({time_of_day_explicit[ad.time_of_day.value]})'
                                         for ad in avail_days])
@@ -118,4 +123,24 @@ def send_avail_days_to_actors(plan_period_id: str):
             smtp.ehlo()
             smtp.login(SEND_ADDRESS, SEND_PASSWORD)
             smtp.send_message(msg)
+    send_online_availables_to_dispatcher(persons_with_availables, plan_period, plan_period.team.dispatcher)
     return True
+
+
+def send_online_availables_to_dispatcher(persons_with_availables: list[tuple[pm.PersonShow, list[pm.AvailDayShow]]],
+                                         plan_period: pm.PlanPeriod, dispatcher: pm.Person):
+
+    text_content = '\n'.join([f'{p.f_name} {p.l_name}: {", ".join([av_d.day.strftime("%d.%m.") for av_d in av])}'
+                              for p, av in persons_with_availables])
+    msg = EmailMessage()
+    msg['From'] = SEND_ADDRESS
+    msg['To'] = dispatcher.email
+    msg['Subject'] = f'Abgegebene Termine für die Planperiode: ' \
+                     f'{plan_period.start.strftime("%d.%m.%Y")}-{plan_period.end.strftime("%d.%m.%Y")}'
+    msg.set_content(f'{text_content}')
+    with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(SEND_ADDRESS, SEND_PASSWORD)
+        smtp.send_message(msg)
