@@ -136,7 +136,8 @@ def send_online_availables_to_dispatcher(persons_with_availables: list[tuple[pm.
     msg['From'] = SEND_ADDRESS
     msg['To'] = dispatcher.email
     msg['Subject'] = f'Abgegebene Termine für die Planperiode: ' \
-                     f'{plan_period.start.strftime("%d.%m.%Y")}-{plan_period.end.strftime("%d.%m.%Y")}'
+                     f'{plan_period.start.strftime("%d.%m.%Y")}-{plan_period.end.strftime("%d.%m.%Y")}, ' \
+                     f'Team {plan_period.team.name}'
     msg.set_content(f'{text_content}')
     with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
         smtp.ehlo()
