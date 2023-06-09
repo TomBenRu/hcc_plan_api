@@ -88,6 +88,8 @@ def send_remainder_deadline(plan_period_id: str):
 
 
 def send_avail_days_to_actors(plan_period_id: str):
+    print('übersprungen')
+    return
     plan_period = get_planperiod(UUID(plan_period_id))
     persons = get_persons__from_plan_period(UUID(plan_period_id))
     time_of_day_explicit = {'v': 'Vormittag', 'n': 'Nachmittag', 'g': 'Ganztag'}
