@@ -129,8 +129,9 @@ def send_avail_days_to_actors(plan_period_id: str):
 
 def send_online_availables_to_dispatcher(persons_with_availables: list[tuple[pm.PersonShow, list[pm.AvailDayShow]]],
                                          plan_period: pm.PlanPeriod, dispatcher: pm.Person):
+    """Die online abgegebenen Termine werden per E-Mail an den Dispatcher gesendet."""
 
-    text_content = '\n'.join([f'{p.f_name} {p.l_name}: {", ".join([av_d.day.strftime("%d.%m.") for av_d in av])}'
+    text_content = '\n'.join([f'{p.f_name} {p.l_name}: {", ".join([av_d.day.strftime("%d.%m.") + f" ({av_d.time_of_day.value})" for av_d in av])}'
                               for p, av in persons_with_availables])
     msg = EmailMessage()
     msg['From'] = SEND_ADDRESS
