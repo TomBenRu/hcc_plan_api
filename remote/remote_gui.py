@@ -128,6 +128,15 @@ class MainFrame(ttk.Frame):
         self.text_log.insert('end', '- delete team\n')
         DeleteTeam(self, self.access_token)
 
+    def change_person_names(self):
+        self.text_log.insert('end', '- change person names\n')
+        if AuthorizationTypes.admin.value not in self.authorizations:
+            tk.messagebox.showerror(parent=self, title='Login', message='Sie haben keine Admin-Rechte.')
+            return
+        change_names = ChangePersonNames(self, self.access_token)
+        self.wait_window(change_names)
+        self.text_log.insert('end', f'-- {self.new_person_data}\n')
+
     def assign_person_to_position(self):
         self.text_log.insert('end', '- new jobs for persons\n')
         if AuthorizationTypes.admin.value not in self.authorizations:
@@ -686,10 +695,77 @@ class CreatePerson(CommonTopLevel):
 
     def new_person(self):
         person = pm.PersonCreate(f_name=self.entry_fname.get(), l_name=self.entry_lname.get(),
-                                 email=EmailStr(self.entry_email.get()), password=self.entry_password.get())
+                                 email=EmailStr(self.entry_email.get()), username=EmailStr(self.entry_email.get()),
+                                 password=self.entry_password.get())
         response = requests.post(f'{self.parent.host}/admin/person',
                                  json=person.dict(),
                                  headers={'Authorization': f'Bearer {self.access_token}'})
+        self.parent.new_person_data = response.json()
+        self.destroy()
+
+
+class ChangePersonNames(CommonTopLevel):
+    def __init__(self, parent, access_token):
+        super().__init__(parent)
+
+        self.access_token = access_token
+        self.all_persons = self.get_persons()
+        self.all_persons__dict_name_person_show: dict[str, pm.PersonShow] = {f'{p.f_name} {p.l_name}': p
+                                                                             for p in self.all_persons}
+        self.var_combo_persons = tk.StringVar()
+
+        self.lb_combo_persons = tk.Label(self.frame_combo_select, text='Personen:')
+        self.combo_persons = ttk.Combobox(self.frame_combo_select, values=list(self.all_persons__dict_name_person_show),
+                                          textvariable=self.var_combo_persons, state='readonly')
+        self.combo_persons.bind('<<ComboboxSelected>>', lambda event: self.new_selection_person())
+        self.lb_combo_persons.grid(row=0, column=0)
+        self.combo_persons.grid(row=0, column=1)
+
+        self.lb_f_name = tk.Label(self.frame_input, text='Vorname:')
+        self.entry_f_name = tk.Entry(self.frame_input)
+        self.lb_l_name = tk.Label(self.frame_input, text='Nachname:')
+        self.entry_l_name = tk.Entry(self.frame_input)
+        self.lb_f_name.grid(row=0, column=0)
+        self.entry_f_name.grid(row=0, column=1)
+        self.lb_l_name.grid(row=1, column=0)
+        self.entry_l_name.grid(row=1, column=1)
+
+        self.bt_ok = tk.Button(self.frame_buttons, text='Ändern', command=self.update_to_db)
+        self.bt_cancel = tk.Button(self.frame_buttons, text='Abbruch', command=self.destroy)
+        self.bt_ok.grid(row=0, column=0)
+        self.bt_cancel.grid(row=0, column=1)
+
+    def get_persons(self) -> list[pm.PersonShow] | None:
+        response = requests.get(f'{self.parent.host}/admin/persons',
+                                headers={'Authorization': f'Bearer {self.access_token}'})
+        try:
+            all_persons: list[pm.PersonShow] = sorted([pm.PersonShow(**p)
+                                                       for p in response.json()], key=lambda p: p.f_name)
+            return all_persons
+        except Exception as e:
+            tk.messagebox.showerror('Personennamen ändern', f'Fehler: {response.json()}, {e}')
+            return
+
+    def new_selection_person(self):
+        person = self.all_persons__dict_name_person_show[self.combo_persons.get()]
+        self.entry_f_name.delete(0, 'end')
+        self.entry_l_name.delete(0, 'end')
+        self.entry_f_name.insert(0, person.f_name)
+        self.entry_l_name.insert(0, person.l_name)
+
+    def update_to_db(self):
+
+        person = self.all_persons__dict_name_person_show.get(self.combo_persons.get())
+        if not person:
+            return
+        person.f_name = self.entry_f_name.get()
+        person.l_name = self.entry_l_name.get()
+        person_json = json.loads(person.json())
+        print(person.f_name, person.l_name)
+        print(person_json)
+
+        response = requests.put(f'{self.parent.host}/admin/person', json=person_json,
+                                headers={'Authorization': f'Bearer {self.access_token}'})
         self.parent.new_person_data = response.json()
         self.destroy()
 
@@ -777,8 +853,8 @@ class AssignPersonToPosition(CommonTopLevel):
         self.destroy()
 
     def new_selection_person(self):
-        selectet = self.var_combo_persons.get()
-        person = self.all_persons_dict_for_combo[selectet]
+        selected = self.var_combo_persons.get()
+        person = self.all_persons_dict_for_combo[selected]
 
         if person.project_of_admin:
             self.var_chk_admin.set(True)
@@ -1482,6 +1558,7 @@ class MainMenu(tk.Menu):
 
         self.admin.add_command(label='Neues Team...', command=parent.new_team)
         self.admin.add_command(label='Neue/r Mitarbeiter:in...', command=parent.new_person)
+        self.admin.add_command(label='Mitarbeiter: Namen ändern...', command=parent.change_person_names)
         self.admin.add_command(label='Mitarbeiter:in einer Position zuweisen...',
                                command=parent.assign_person_to_position)
         self.admin.add_command(label='Team ändern...', command=parent.change_team)

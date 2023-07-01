@@ -84,6 +84,7 @@ def update_person(person: pm.PersonShow, admin_id: UUID) -> pm.PersonShow:
             person_in_db.team_of_actor = Team[person.team_of_actor.id]
         else:
             person_in_db.team_of_actor = None
+        person_in_db.set(f_name=person.f_name, l_name=person.l_name)
         return pm.PersonShow.from_orm(person_in_db)
 
 

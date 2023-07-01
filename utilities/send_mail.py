@@ -93,8 +93,6 @@ def send_avail_days_to_actors(plan_period_id: str):
     time_of_day_explicit = {'v': 'Vormittag', 'n': 'Nachmittag', 'g': 'Ganztag'}
     persons_with_availables: list[tuple[pm.PersonShow, list[pm.AvailDayShow]]] = []
     for person in persons:
-        if person.email != 'mail@thomas-ruff.de':
-            continue
         avail_days_from_service = get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id))
         if avail_days_from_service is None:
             continue
