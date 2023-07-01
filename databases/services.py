@@ -9,12 +9,11 @@ import apscheduler.job
 from pony.orm import Database, db_session, select, TransactionIntegrityError
 from pony.orm.core import Multiset, flush, commit
 from pydantic import EmailStr
-
-from databases.pony_models import APSchedulerJob
+from databases.models import APSchedulerJob
 from utilities import utils
 from .database import (Team, Person, PlanPeriod, Availables, AvailDay, Project)
 from .enums import TimeOfDay, AuthorizationTypes
-import databases.pydantic_models as pm
+import databases.schemas as pm
 
 
 class CustomError(Exception):

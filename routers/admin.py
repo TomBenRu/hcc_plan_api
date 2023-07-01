@@ -3,8 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status, Depends
 
+from databases import schemas
 from databases.enums import AuthorizationTypes
-import databases.pydantic_models as pm
 from databases.services import create_new_team, get_project_from_user_id, \
     get_all_persons, get_all_project_teams, create_person, update_project_name, \
     delete_person_from_project, delete_team_from_project, delete_a_account, update_team_from_project, update_person
@@ -69,7 +69,7 @@ async def update_projekt_name(new_name: str, access_token: str = Depends(oauth2_
 
 
 @router.post('/person')
-async def add_new_person(person: pm.PersonCreate, access_token: str = Depends(oauth2_scheme)):
+async def add_new_person(person: schemas.PersonCreate, access_token: str = Depends(oauth2_scheme)):
     try:
         token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
@@ -83,7 +83,7 @@ async def add_new_person(person: pm.PersonCreate, access_token: str = Depends(oa
 
 
 @router.post('/team')
-async def add_new_team(team: pm.TeamCreate, person: dict, access_token: str = Depends(oauth2_scheme)):
+async def add_new_team(team: schemas.TeamCreate, person: dict, access_token: str = Depends(oauth2_scheme)):
     try:
         token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:
@@ -97,7 +97,7 @@ async def add_new_team(team: pm.TeamCreate, person: dict, access_token: str = De
 
 
 @router.put('/person')
-async def update_a_person(person: pm.PersonShow, access_token: str = Depends(oauth2_scheme)):
+async def update_a_person(person: schemas.PersonShow, access_token: str = Depends(oauth2_scheme)):
     try:
         token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
     except Exception as e:

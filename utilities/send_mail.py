@@ -2,7 +2,7 @@ from email.message import EmailMessage
 import smtplib
 from uuid import UUID
 
-import databases.pydantic_models as pm
+import databases.schemas as pm
 import settings
 from databases.services import delete_job_from_db, get_not_feedbacked_availables, get_planperiod, \
     get_persons__from_plan_period, get_avail_days__from_actor_planperiod

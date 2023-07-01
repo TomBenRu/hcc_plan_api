@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Request, HTTPException, status, Depends
 
-import databases.pydantic_models as pm
+from databases import schemas
 from databases.enums import AuthorizationTypes
 from databases.services import create_account, delete_a_account
 from oauth2_authentication import verify_access_token, oauth2_scheme
@@ -11,7 +11,8 @@ router = APIRouter(prefix='/su', tags=['Superuser'])
 
 
 @router.post('/account')
-async def new_account(person: pm.PersonCreate, project: pm.ProjectCreate, access_token: str = Depends(oauth2_scheme)):
+async def new_account(person: schemas.PersonCreate, project: schemas.ProjectCreate,
+                      access_token: str = Depends(oauth2_scheme)):
     try:
         verify_access_token(access_token, AuthorizationTypes.supervisor)
     except Exception as e:

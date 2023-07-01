@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from databases.services import get_scheduler_jobs
 from routers import auth, actors, supervisor, admin, dispatcher, index
 from utilities.scheduler import scheduler
-import databases.pydantic_models as pm
+from databases import schemas
 
 app = FastAPI()
 
@@ -17,7 +17,7 @@ app.mount('/static', StaticFiles(directory='static'), name='static')
 def scheduler_startup():
     scheduler.start()
     print('scheduler started')
-    jobs: list[pm.APSchedulerJob] = get_scheduler_jobs()
+    jobs: list[schemas.APSchedulerJob] = get_scheduler_jobs()
     print(f'To load: {[asj.job for asj in jobs]}')
     for job in jobs:
         scheduler.add_job(**job.job)

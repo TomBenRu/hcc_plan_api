@@ -4,7 +4,7 @@ from fastapi.security.oauth2 import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from databases.enums import AuthorizationTypes
-import databases.pydantic_models as pm
+import databases.schemas as pm
 from databases.services import find_user_by_email, get_list_of_authorizations
 from settings import settings
 from utilities import utils

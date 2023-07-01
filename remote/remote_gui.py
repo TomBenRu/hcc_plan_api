@@ -11,7 +11,7 @@ import tkcalendar
 import jwt
 from pydantic import EmailStr, BaseModel
 
-import databases.pydantic_models as pm
+import databases.schemas as pm
 from databases.enums import AuthorizationTypes
 from remote.tools import PlaceholderEntry
 from remote.progressbars import ProgressIndeterm
@@ -730,10 +730,10 @@ class ChangePersonNames(CommonTopLevel):
         self.lb_l_name.grid(row=1, column=0)
         self.entry_l_name.grid(row=1, column=1)
 
-        self.bt_ok = tk.Button(self.frame_buttons, text='Ändern', command=self.update_to_db)
-        self.bt_cancel = tk.Button(self.frame_buttons, text='Abbruch', command=self.destroy)
-        self.bt_ok.grid(row=0, column=0)
-        self.bt_cancel.grid(row=0, column=1)
+        self.bt_ok = tk.Button(self.frame_buttons, text='Ändern', width=15, command=self.update_to_db)
+        self.bt_cancel = tk.Button(self.frame_buttons, text='Abbruch', width=15, command=self.destroy)
+        self.bt_ok.grid(row=0, column=0, padx=(0, 5))
+        self.bt_cancel.grid(row=0, column=1, padx=(5, 0))
 
     def get_persons(self) -> list[pm.PersonShow] | None:
         response = requests.get(f'{self.parent.host}/admin/persons',
@@ -761,8 +761,6 @@ class ChangePersonNames(CommonTopLevel):
         person.f_name = self.entry_f_name.get()
         person.l_name = self.entry_l_name.get()
         person_json = json.loads(person.json())
-        print(person.f_name, person.l_name)
-        print(person_json)
 
         response = requests.put(f'{self.parent.host}/admin/person', json=person_json,
                                 headers={'Authorization': f'Bearer {self.access_token}'})

@@ -3,8 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status, Depends
 
+from databases import schemas
 from databases.enums import AuthorizationTypes
-import databases.pydantic_models as pm
 from databases.services import (create_new_plan_period, get_actors_in_dispatcher_teams,
                                 get_planperiods_last_recent_date, get_project_from_user_id, get_teams_of_dispatcher,
                                 get_planperiods_of_team, update_1_planperiod, delete_planperiod_from_team,
@@ -88,7 +88,7 @@ def delete_planperiod(planperiod_id: str, access_token: str = Depends(oauth2_sch
 
 
 @router.put('/planperiod')
-def update_planperiod(planperiod: pm.PlanPeriod, access_token: str = Depends(oauth2_scheme)):
+def update_planperiod(planperiod: schemas.PlanPeriod, access_token: str = Depends(oauth2_scheme)):
     try:
         token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
@@ -189,7 +189,7 @@ def not_feedbacked_availables(planperiod_id: str, access_token: str = Depends(oa
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials - {e}')
     user_id = token_data.id
-    not_feedbacked: list[pm.Person] = get_not_feedbacked_availables(planperiod_id)
+    not_feedbacked: list[schemas.Person] = get_not_feedbacked_availables(planperiod_id)
     return {'plan_period_id': planperiod_id, 'persons': not_feedbacked}
 
 

@@ -3,14 +3,14 @@ from enum import Enum
 from pony.orm import Database, sql_debug
 
 # the models have to be imported for correct database mapping
-from .pony_models import (db_actors, Team, Person, PlanPeriod, Availables, AvailDay, Project, APSchedulerJob)
+from .models import (db_actors, Team, Person, PlanPeriod, Availables, AvailDay, Project, APSchedulerJob)
 
 import settings
 from .enum_converter import EnumConverter
 
 
 # zum Deployen müssen server_remote_access, local und from_outside False sein
-server_remote_acces = False
+server_remote_access = False
 local = False  # True: sqlite-database, False: postgresql-database
 from_outside = False  # False: calling database from same API
 
@@ -39,7 +39,7 @@ def generate_db_mappings(db: Database, file: str):
     db.generate_mapping(create_tables=True)
 
 
-if not server_remote_acces:
+if not server_remote_access:
     for db, file in ((db_actors, settings.settings.db_actors), ):
         generate_db_mappings(db=db, file=file)
 
