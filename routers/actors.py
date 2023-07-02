@@ -4,9 +4,8 @@ from pydantic import EmailStr
 from starlette.datastructures import URL
 from starlette.responses import RedirectResponse
 
+from databases import services
 from databases.enums import AuthorizationTypes
-from databases.services import (available_days_to_db, get_open_plan_periods, get_user_by_id, set_new_password,
-                                get_project_from_user_id)
 from oauth2_authentication import get_current_user_cookie, verify_actor_username
 from utilities import send_mail
 
@@ -25,9 +24,9 @@ def actor_plan_periods(request: Request):
         # return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Fehler: {e}')
     user_id = token_data.id
 
-    user = get_user_by_id(user_id)
+    user = services.Person.get_user_by_id(user_id)
     name_project = user.project.name
-    plan_per_et_filled_in = get_open_plan_periods(user_id)
+    plan_per_et_filled_in = services.PlanPeriod.get_open_plan_periods(user_id)
 
     response = templates.TemplateResponse('index_actor.html',
                                           context={'request': request, 'name_project': name_project,
@@ -50,11 +49,11 @@ async def actor_plan_periods_handler(request: Request):
 
     formdata = await request.form()
 
-    plan_periods = available_days_to_db(dict(formdata), user_id)
+    plan_periods = services.AvailDay.available_days_to_db(dict(formdata), user_id)
 
-    user = get_user_by_id(user_id)
+    user = services.Person.get_user_by_id(user_id)
     name_project = user.project.name
-    plan_per_et_filled_in = get_open_plan_periods(user_id)
+    plan_per_et_filled_in = services.PlanPeriod.get_open_plan_periods(user_id)
 
     return templates.TemplateResponse('index_actor.html',
                                       context={'request': request, 'name_project': name_project,
@@ -74,11 +73,11 @@ def send_new_password(request: Request, user_email: EmailStr):
     user_id = user.id
 
     try:
-        project = get_project_from_user_id(user_id=user_id)
+        project = services.Project.get_project_from_user_id(user_id=user_id)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler2: {e}')
     try:
-        person, new_password = set_new_password(user_id=user_id)
+        person, new_password = services.Person.set_new_password(user_id=user_id)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler3: {e}')
     try:

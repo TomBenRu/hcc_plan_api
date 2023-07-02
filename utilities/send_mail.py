@@ -4,8 +4,7 @@ from uuid import UUID
 
 import databases.schemas as pm
 import settings
-from databases.services import delete_job_from_db, get_not_feedbacked_availables, get_planperiod, \
-    get_persons__from_plan_period, get_avail_days__from_actor_planperiod
+from databases import services
 
 SEND_ADDRESS = settings.settings.send_address
 SEND_PASSWORD = settings.settings.send_password
@@ -57,7 +56,7 @@ def send_remainder_confirmation(planperiod: pm.PlanPeriod, persons: list[pm.Pers
 
 def send_remainder_deadline(plan_period_id: str):
     planperiod = get_planperiod(UUID(plan_period_id))
-    persons = get_not_feedbacked_availables(plan_period_id)
+    persons = services.Availables.get_not_feedbacked_availables(plan_period_id)
     text_planperiod = f"Zeitraum: {planperiod.start.strftime('%d.%m.%y')} - {planperiod.end.strftime('%d.%m.%y')}"
     for person in persons:
         send_to = person.email
@@ -82,18 +81,18 @@ def send_remainder_deadline(plan_period_id: str):
             smtp.ehlo()
             smtp.login(SEND_ADDRESS, SEND_PASSWORD)
             smtp.send_message(msg)
-    delete_job_from_db(plan_period_id)
+    services.APSchedulerJob.delete_job_from_db(plan_period_id)
     send_remainder_confirmation(planperiod, persons)
     return True
 
 
 def send_avail_days_to_actors(plan_period_id: str):
-    plan_period = get_planperiod(UUID(plan_period_id))
-    persons = get_persons__from_plan_period(UUID(plan_period_id))
+    plan_period = services.PlanPeriod.get_planperiod(UUID(plan_period_id))
+    persons = services.Person.get_persons__from_plan_period(UUID(plan_period_id))
     time_of_day_explicit = {'v': 'Vormittag', 'n': 'Nachmittag', 'g': 'Ganztag'}
     persons_with_availables: list[tuple[pm.PersonShow, list[pm.AvailDayShow]]] = []
     for person in persons:
-        avail_days_from_service = get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id))
+        avail_days_from_service = services.AvailDay.get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id))
         if avail_days_from_service is None:
             continue
         avail_days = sorted(avail_days_from_service, key=lambda x: x.day)

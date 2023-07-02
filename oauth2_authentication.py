@@ -3,9 +3,8 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security.oauth2 import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
+from databases import schemas, services
 from databases.enums import AuthorizationTypes
-import databases.schemas as pm
-from databases.services import find_user_by_email, get_list_of_authorizations
 from settings import settings
 from utilities import utils
 
@@ -31,14 +30,14 @@ def create_access_token(data: dict) -> str:
     return encoded_jwt
 
 
-def verify_access_token(token: str, role: AuthorizationTypes) -> pm.TokenData:
+def verify_access_token(token: str, role: AuthorizationTypes) -> schemas.TokenData:
     try:
         payload = jwt.decode(token=token, key=SECRET_KEY, algorithms=ALGORITHM)
         if not (u_id := payload.get('user_id')):
             raise credentials_exception
         if role.value not in payload['roles']:
             raise credentials_exception
-        token_data = pm.TokenData(id=u_id, authorizations=payload['roles'])
+        token_data = schemas.TokenData(id=u_id, authorizations=payload['roles'])
     except JWTError:
         raise credentials_exception
     return token_data
@@ -52,24 +51,30 @@ def get_current_user_cookie(request: Request, token_key: str, role: Authorizatio
     return verify_access_token(token, role)
 
 
-def get_authorization_types(user: pm.PersonShow) -> list[AuthorizationTypes]:
-    auth_types = get_list_of_authorizations(user)
+def get_authorization_types(user: schemas.PersonShow) -> list[AuthorizationTypes]:
+    auth_types = []
+    if user.team_of_actor:
+        auth_types.append(AuthorizationTypes.actor)
+    if user.project_of_admin:
+        auth_types.append(AuthorizationTypes.admin)
+    if user.teams_of_dispatcher:
+        auth_types.append(AuthorizationTypes.dispatcher)
     return auth_types
 
 
-def authenticate_user(username: str, passwort: str) -> pm.PersonShow | str:
+def authenticate_user(username: str, passwort: str) -> schemas.PersonShow | str:
     if username == SUPERVISOR_USERNAME:
         if utils.verify(passwort, SUPERVISOR_PASSWORD):
             return 'supervisor'
-    if not (user := find_user_by_email(email=username)):
+    if not (user := services.Person.find_user_by_email(email=username)):
         raise credentials_exception
     if not utils.verify(passwort, user.password):
         raise credentials_exception
     return user
 
 
-def verify_actor_username(username: str) -> pm.PersonShow | None:
-    if user := find_user_by_email(username):
+def verify_actor_username(username: str) -> schemas.PersonShow | None:
+    if user := services.Person.find_user_by_email(username):
         if user.team_of_actor:
             return user
     return None

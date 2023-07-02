@@ -2,22 +2,21 @@ from enum import Enum
 
 from pony.orm import Database, sql_debug
 
-# the models have to be imported for correct database mapping
-from .models import (db_actors, Team, Person, PlanPeriod, Availables, AvailDay, Project, APSchedulerJob)
-
 import settings
+from databases import models
 from .enum_converter import EnumConverter
 
 
 # zum Deployen müssen server_remote_access, local und from_outside False sein
 server_remote_access = False
-local = False  # True: sqlite-database, False: postgresql-database
+local = True  # True: sqlite-database, False: postgresql-database
 from_outside = False  # False: calling database from same API
 
 # sql_debug(True)
 
 
 def generate_db_mappings(db: Database, file: str):
+
     if not local:
         #########################################################################################################
         # this ist the connection to postgresql on render.com
@@ -39,9 +38,11 @@ def generate_db_mappings(db: Database, file: str):
     db.generate_mapping(create_tables=True)
 
 
-if not server_remote_access:
-    for db, file in ((db_actors, settings.settings.db_actors), ):
-        generate_db_mappings(db=db, file=file)
+def start_db():
+    if not server_remote_access:
+        for db, file in ((models.db_actors, settings.settings.db_actors), ):
+            generate_db_mappings(db=db, file=file)
+
 
 if __name__ == '__main__':
     pass

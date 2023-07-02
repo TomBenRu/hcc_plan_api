@@ -5,8 +5,8 @@ from pydantic import EmailStr
 from starlette.datastructures import URL
 from starlette.responses import RedirectResponse
 
+from databases import services
 from databases.enums import AuthorizationTypes
-from databases.services import get_user_by_id, set_new_actor_account_settings
 from oauth2_authentication import verify_actor_username, get_current_user_cookie, \
     authenticate_user, create_access_token, get_authorization_types
 from utilities import utils
@@ -24,7 +24,7 @@ def home(request: Request):
         return templates.TemplateResponse('index.html', context={'request': request, 'InvalidCredentials': False})
     user_id = token_data.id
 
-    user = get_user_by_id(user_id)
+    user = services.Person.get_user_by_id(user_id)
     name_project = user.project.name
     response = templates.TemplateResponse('index_home.html',
                                           context={'request': request, 'name_project': name_project,
@@ -77,7 +77,7 @@ def account_settings(request: Request, confirmed_password: bool = True):
         return templates.TemplateResponse('index.html',
                                           context={'request': request, 'InvalidCredentials': False, 'logged_out': True})
     user_id = token_data.id
-    user = get_user_by_id(user_id)
+    user = services.Person.get_user_by_id(user_id)
     name_project = user.project.name
 
     return templates.TemplateResponse('account_settings_actor.html',
@@ -99,7 +99,7 @@ def write_new_account_settings(request: Request, email: EmailStr = Form(...), pa
     user_id = token_data.id
 
     try:
-        person = set_new_actor_account_settings(person_id=user_id, new_email=email, new_password=password)
+        person = services.Person.set_new_actor_account_settings(person_id=user_id, new_email=email, new_password=password)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler: {e}')
 

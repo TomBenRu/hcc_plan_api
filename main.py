@@ -3,7 +3,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from databases.services import get_scheduler_jobs
+from databases import database, services
 from routers import auth, actors, supervisor, admin, dispatcher, index
 from utilities.scheduler import scheduler
 from databases import schemas
@@ -13,11 +13,14 @@ app = FastAPI()
 app.mount('/static', StaticFiles(directory='static'), name='static')
 
 
+database.start_db()
+
+
 @app.on_event('startup')
 def scheduler_startup():
     scheduler.start()
     print('scheduler started')
-    jobs: list[schemas.APSchedulerJob] = get_scheduler_jobs()
+    jobs: list[schemas.APSchedulerJob] = services.APSchedulerJob.get_scheduler_jobs()
     print(f'To load: {[asj.job for asj in jobs]}')
     for job in jobs:
         scheduler.add_job(**job.job)
@@ -39,4 +42,3 @@ app.include_router(dispatcher.router)
 
 if __name__ == '__main__':
     uvicorn.run(app)
-    import databases.database
