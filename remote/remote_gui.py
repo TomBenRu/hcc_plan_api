@@ -11,7 +11,7 @@ import tkcalendar
 import jwt
 from pydantic import EmailStr, BaseModel
 
-import databases.schemas as pm
+from databases import schemas
 from databases.enums import AuthorizationTypes
 from remote.tools import PlaceholderEntry
 from remote.progressbars import ProgressIndeterm
@@ -33,11 +33,11 @@ class MainFrame(ttk.Frame):
         self.access_token = None
         self.authorizations = []
 
-        self.project: pm.Project | None = None
+        self.project: schemas.Project | None = None
         self.new_project_data: dict | None = None
         self.new_person_data: dict | None = None
         self.new_team_data: dict | None = None
-        self.changed_team: pm.Team | None = None
+        self.changed_team: schemas.Team | None = None
         self.all_actors: list[dict[str, str]] | None = None
         self.avail_days = {}
         self.planperiod = None
@@ -221,11 +221,11 @@ class HelperRequests:
         pass
 
     @classmethod
-    def get_all_actors(cls, parent, host: str, access_token: str) -> list[pm.PersonShow]:
+    def get_all_actors(cls, parent, host: str, access_token: str) -> list[schemas.PersonShow]:
         response = requests.get(f'{host}/dispatcher/actors',
                                 headers={'Authorization': f'Bearer {access_token}'})
         try:
-            persons: list[pm.PersonShow] = [pm.PersonShow.parse_obj(p) for p in response.json()]
+            persons: list[schemas.PersonShow] = [schemas.PersonShow.parse_obj(p) for p in response.json()]
             return persons
         except Exception as e:
             tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
@@ -235,7 +235,7 @@ class HelperRequests:
         response = requests.get(f'{host}/dispatcher/teams',
                                 headers={'Authorization': f'Bearer {access_token}'})
         try:
-            return sorted([pm.Team(**t) for t in response.json()], key=lambda t: t.name)
+            return sorted([schemas.Team(**t) for t in response.json()], key=lambda t: t.name)
         except Exception as e:
             tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
 
@@ -245,7 +245,7 @@ class HelperRequests:
                                 headers={'Authorization': f'Bearer {access_token}'})
         data = response.json()
         try:
-            teams = [pm.Team.parse_obj(team) for team in data]
+            teams = [schemas.Team.parse_obj(team) for team in data]
             return teams
         except:
             tk.messagebox.showerror(parent=parent, message=f'{response.text}')
@@ -256,7 +256,7 @@ class HelperRequests:
                                 params={'team_id': team_id},
                                 headers={'Authorization': f'Bearer {access_token}'})
         try:
-            planperiods = sorted([pm.PlanPeriod(**pp) for pp in response.json()], key=lambda v: v.start, reverse=True)
+            planperiods = sorted([schemas.PlanPeriod(**pp) for pp in response.json()], key=lambda v: v.start, reverse=True)
             return planperiods
         except Exception as e:
             tk.messagebox.showerror(parent=parent, message=f'{response.text} Fehler: {e}')
@@ -540,12 +540,12 @@ class CreateNewProject(CommonTopLevel):
         self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(10, 0))
 
     def new_project(self):
-        person = pm.PersonCreate(f_name=self.entry_fname_admin.get(), l_name=self.entry_lname_admin.get(),
+        person = schemas.PersonCreate(f_name=self.entry_fname_admin.get(), l_name=self.entry_lname_admin.get(),
                                  email=EmailStr(self.entry_email_admin.get()), password=self.entry_password_admin.get(),
                                  username=self.entry_username_admin.get())
-        project = pm.ProjectCreate(name=self.entry_projectname.get(), active=self.var_chk_active.get())
+        project = schemas.ProjectCreate(name=self.entry_projectname.get(), active=self.var_chk_active.get())
 
-        token = pm.Token(access_token=self.access_token, token_type='bearer')
+        token = schemas.Token(access_token=self.access_token, token_type='bearer')
         response = requests.post(f'{self.parent.host}/su/account',
                                  json={'person': person.dict(), 'project': project.dict()},
                                  headers={'Authorization': f'Bearer {self.access_token}'})
@@ -602,7 +602,7 @@ class DeleteAccount(CommonTopLevel):
                                        params={'project_id': self.project.id},
                                        headers={'Authorization': f'Bearer {self.access_token}'})
             try:
-                deleted_project = pm.Project.parse_obj(response.json())
+                deleted_project = schemas.Project.parse_obj(response.json())
                 tk.messagebox.showinfo(parent=self,
                                        message=f'Der Account {deleted_project.name} wurde vollständig entfernt.')
                 self.destroy()
@@ -615,7 +615,7 @@ class DeleteAccount(CommonTopLevel):
         response = requests.get(f'{self.parent.host}/admin/project',
                                 headers={'Authorization': f'Bearer {self.access_token}'})
         try:
-            project = pm.Project.parse_obj(response.json())
+            project = schemas.Project.parse_obj(response.json())
             print(project)
             return project
         except Exception as e:
@@ -694,7 +694,7 @@ class CreatePerson(CommonTopLevel):
         self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(10, 0))
 
     def new_person(self):
-        person = pm.PersonCreate(f_name=self.entry_fname.get(), l_name=self.entry_lname.get(),
+        person = schemas.PersonCreate(f_name=self.entry_fname.get(), l_name=self.entry_lname.get(),
                                  email=EmailStr(self.entry_email.get()), username=EmailStr(self.entry_email.get()),
                                  password=self.entry_password.get())
         response = requests.post(f'{self.parent.host}/admin/person',
@@ -710,7 +710,7 @@ class ChangePersonNames(CommonTopLevel):
 
         self.access_token = access_token
         self.all_persons = self.get_persons()
-        self.all_persons__dict_name_person_show: dict[str, pm.PersonShow] = {f'{p.f_name} {p.l_name}': p
+        self.all_persons__dict_name_person_show: dict[str, schemas.PersonShow] = {f'{p.f_name} {p.l_name}': p
                                                                              for p in self.all_persons}
         self.var_combo_persons = tk.StringVar()
 
@@ -735,11 +735,11 @@ class ChangePersonNames(CommonTopLevel):
         self.bt_ok.grid(row=0, column=0, padx=(0, 5))
         self.bt_cancel.grid(row=0, column=1, padx=(5, 0))
 
-    def get_persons(self) -> list[pm.PersonShow] | None:
+    def get_persons(self) -> list[schemas.PersonShow] | None:
         response = requests.get(f'{self.parent.host}/admin/persons',
                                 headers={'Authorization': f'Bearer {self.access_token}'})
         try:
-            all_persons: list[pm.PersonShow] = sorted([pm.PersonShow(**p)
+            all_persons: list[schemas.PersonShow] = sorted([schemas.PersonShow(**p)
                                                        for p in response.json()], key=lambda p: p.f_name)
             return all_persons
         except Exception as e:
@@ -780,7 +780,7 @@ class AssignPersonToPosition(CommonTopLevel):
 
         self.all_persons = self.get_persons()
         self.all_teams = self.get_teams()
-        self.all_persons_dict_for_combo: dict[str, pm.PersonShow] = self.make_dict_for_widgets('person')
+        self.all_persons_dict_for_combo: dict[str, schemas.PersonShow] = self.make_dict_for_widgets('person')
         self.all_teams_dict_for_radio_chk: dict[str: str] = self.make_dict_for_widgets('team')
 
         self.all_checks_team = {}
@@ -942,7 +942,7 @@ class AssignPersonToPosition(CommonTopLevel):
         response = requests.get(f'{self.parent.host}/admin/persons',
                                 headers={'Authorization': f'Bearer {self.access_token}'})
         try:
-            all_persons = sorted([pm.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
+            all_persons = sorted([schemas.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
             return all_persons
         except Exception as e:
             return response.json(), e
@@ -955,7 +955,7 @@ class AssignPersonToPosition(CommonTopLevel):
             tk.messagebox.showerror(parent=self, message='Nicht authorisiert!')
             self.destroy()
 
-        return sorted([pm.Team(**team) for team in data], key=lambda t: t.name)
+        return sorted([schemas.Team(**team) for team in data], key=lambda t: t.name)
 
     def make_dict_for_widgets(self, combo_type: Literal['person', 'team']):
         if combo_type == 'person':
@@ -997,7 +997,7 @@ class DeleteTeam(CommonTopLevel):
                                    headers={'Authorization': f'Bearer {self.access_token}'})
 
         try:
-            deleted_team = pm.Team.parse_obj(response.json())
+            deleted_team = schemas.Team.parse_obj(response.json())
             tk.messagebox.showinfo(parent=self,
                                    message=f'Das Team "{deleted_team.name}" mit allen verbundenen Planperioden wurde '
                                            f'aus der Datenbank gelöscht.')
@@ -1045,7 +1045,7 @@ class DeletePerson(CommonTopLevel):
                                    headers={'Authorization': f'Bearer {self.access_token}'})
 
         try:
-            deleted_person = pm.Person(**response.json())
+            deleted_person = schemas.Person(**response.json())
             tk.messagebox.showinfo(parent=self,
                                    message=f'Der/die Mitarbeiter:in "{deleted_person.f_name} {deleted_person.l_name}" '
                                            f'wurde aus der Datenbank gelöscht.')
@@ -1059,7 +1059,7 @@ class DeletePerson(CommonTopLevel):
         response = requests.get(f'{self.parent.host}/admin/persons',
                                 headers={'Authorization': f'Bearer {self.access_token}'})
         try:
-            all_persons = sorted([pm.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
+            all_persons = sorted([schemas.PersonShow(**p) for p in response.json()], key=lambda p: p.f_name)
             return all_persons
         except Exception as e:
             tk.messagebox.showerror(parent=self, message=f'Ein Fehler trat auf: {e}')
@@ -1079,7 +1079,7 @@ class ChangePlanPeriod(CommonTopLevel):
         self.var_combo_teams = tk.StringVar()
         self.values_combo_teams = {t.name: str(t.id)
                                    for t in HelperRequests.get_teams_dispatcher(self, parent.host, self.access_token)}
-        self.values_combo_planperiods: dict[str, pm.PlanPeriod] = {}
+        self.values_combo_planperiods: dict[str, schemas.PlanPeriod] = {}
 
         self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Team')
         self.lb_combo_teams.grid(row=0, column=0, sticky='w')
@@ -1129,7 +1129,7 @@ class ChangePlanPeriod(CommonTopLevel):
         if not self.var_combo_planperiods.get():
             tk.messagebox.showinfo(parent=self, message='Bitte wählen Sie zuest eine Planperiode aus.')
             return
-        planperiod: pm.PlanPeriod = self.values_combo_planperiods[self.var_combo_planperiods.get()]
+        planperiod: schemas.PlanPeriod = self.values_combo_planperiods[self.var_combo_planperiods.get()]
         planperiod.start = self.start.get_date()
         planperiod.end = self.end.get_date()
         planperiod.deadline = self.deadline.get_date()
@@ -1141,7 +1141,7 @@ class ChangePlanPeriod(CommonTopLevel):
                                 json=planperiod,
                                 headers={'Authorization': f'Bearer {self.access_token}'})
         try:
-            new_planperiod = pm.PlanPeriod.parse_obj(response.json())
+            new_planperiod = schemas.PlanPeriod.parse_obj(response.json())
             self.destroy()
             tk.messagebox.showinfo(parent=self.parent, message='Update war erfolgreich.')
         except Exception as e:
@@ -1230,7 +1230,7 @@ class GetAvailDays(CommonTopLevel):
                                 headers={'Authorization': f'Bearer {self.access_token}'})
         avail_days = response.json()
         try:
-            avail_days = {person_id: {'days': [pm.AvailDay.parse_obj(ad) for ad in av_days['days']], 'notes': av_days['notes']}
+            avail_days = {person_id: {'days': [schemas.AvailDay.parse_obj(ad) for ad in av_days['days']], 'notes': av_days['notes']}
                           for person_id, av_days in avail_days.items()}
             self.parent.avail_days = avail_days
             self.destroy()
@@ -1280,7 +1280,7 @@ class CreateTeam(CommonTopLevel):
         self.get_persons()
 
     def create(self):
-        team = pm.TeamCreate(name=self.entry_name.get())
+        team = schemas.TeamCreate(name=self.entry_name.get())
         person_id = self.all_persons[self.var_combo_dispatcher.get()]
 
         response = requests.post(f'{self.parent.host}/admin/team',
@@ -1288,7 +1288,7 @@ class CreateTeam(CommonTopLevel):
                                  headers={'Authorization': f'Bearer {self.access_token}'})
         data = response.json()
         try:
-            team = pm.Team.parse_obj(data)
+            team = schemas.Team.parse_obj(data)
         except Exception as e:
             tk.messagebox.showerror(parent=self, message=f'{response.text}')
             return
@@ -1298,7 +1298,7 @@ class CreateTeam(CommonTopLevel):
     def get_persons(self):
         response = requests.get(f'{self.parent.host}/admin/persons',
                                 headers={'Authorization': f'Bearer {self.access_token}'})
-        all_persons = sorted([pm.Person(**p) for p in response.json()], key=lambda p: p.f_name)
+        all_persons = sorted([schemas.Person(**p) for p in response.json()], key=lambda p: p.f_name)
         return all_persons
 
 
@@ -1341,7 +1341,7 @@ class ChangeTeam(CommonTopLevel):
                                 params={'team_id': team.id, 'new_team_name': self.entry_name.get()},
                                 headers={'Authorization': f'Bearer {self.access_token}'})
         try:
-            updated_team = pm.Team.parse_obj(response.json())
+            updated_team = schemas.Team.parse_obj(response.json())
             self.parent.changed_team = updated_team
             self.destroy()
         except:
@@ -1366,7 +1366,7 @@ class CreatePlanperiod(tk.Toplevel):
         self.access_token = access_token
 
         self.date = datetime.datetime.now()
-        self.teams: list[pm.TeamShow] | None = None
+        self.teams: list[schemas.TeamShow] | None = None
         self.values_combo_teams: dict[str, str] | None = None
 
         self.frame_team = ttk.Frame(self, padding='20 20 20 20')
@@ -1476,7 +1476,7 @@ class DeletePlanperiod(CommonTopLevel):
         self.var_combo_teams = tk.StringVar()
         self.values_combo_teams = {t.name: str(t.id)
                                    for t in HelperRequests.get_teams_dispatcher(self, parent.host, self.access_token)}
-        self.values_combo_planperiods: dict[str, pm.PlanPeriod] = {}
+        self.values_combo_planperiods: dict[str, schemas.PlanPeriod] = {}
 
         self.lb_combo_teams = tk.Label(self.frame_combo_select, text='Team')
         self.lb_combo_teams.grid(row=0, column=0, sticky='w')
@@ -1509,7 +1509,7 @@ class DeletePlanperiod(CommonTopLevel):
                                    params={'planperiod_id': planperiod.id},
                                    headers={'Authorization': f'Bearer {self.access_token}'})
         try:
-            deleted_planperiod = pm.PlanPeriod(**response.json())
+            deleted_planperiod = schemas.PlanPeriod(**response.json())
             tk.messagebox.showinfo(parent=self,
                                    message=f'Die Planperiode "{deleted_planperiod.start}-{deleted_planperiod.end}"'
                                            f'mit allen verbundenen Spieloptionen wurde gelöscht')

@@ -188,7 +188,7 @@ def not_feedbacked_availables(planperiod_id: str, access_token: str = Depends(oa
     return {'plan_period_id': planperiod_id, 'persons': not_feedbacked}
 
 
-# @router.post('/create_remainder', response_model=pm.APSchedulerJob)
+# @router.post('/create_remainder', response_model=schemas.APSchedulerJob)
 # def create_remainder(planperiod_id: str, date: datetime.date):
 #     print(f'in create_ramainder: {date}')
 #     try:
@@ -206,7 +206,7 @@ def not_feedbacked_availables(planperiod_id: str, access_token: str = Depends(oa
 #     return new_job
 
 
-# @router.get('/persons-without-availables', response_model=list[pm.Person])
+# @router.get('/persons-without-availables', response_model=list[schemas.Person])
 # def persons_without_av(plan_period_id: str):
 #     persons = get_not_feedbacked_availables(plan_period_id)
 #     return persons

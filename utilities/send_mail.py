@@ -2,7 +2,7 @@ from email.message import EmailMessage
 import smtplib
 from uuid import UUID
 
-import databases.schemas as pm
+from databases import schemas
 import settings
 from databases import services
 
@@ -12,7 +12,7 @@ POST_AUSG_SERVER = settings.settings.post_ausg_server
 SEND_PORT = settings.settings.send_port
 
 
-def send_new_password(person: pm.Person, project: str, new_psw: str):
+def send_new_password(person: schemas.Person, project: str, new_psw: str):
     send_to = person.email
     msg = EmailMessage()
     msg['From'] = SEND_ADDRESS
@@ -32,7 +32,7 @@ def send_new_password(person: pm.Person, project: str, new_psw: str):
     return True
 
 
-def send_remainder_confirmation(planperiod: pm.PlanPeriod, persons: list[pm.Person]):
+def send_remainder_confirmation(planperiod: schemas.PlanPeriod, persons: list[schemas.Person]):
     text_empfaenger = ', '.join([f'{p.f_name} {p.l_name}' for p in persons])
     send_to = planperiod.team.dispatcher.email
     msg = EmailMessage()
@@ -90,7 +90,7 @@ def send_avail_days_to_actors(plan_period_id: str):
     plan_period = services.PlanPeriod.get_planperiod(UUID(plan_period_id))
     persons = services.Person.get_persons__from_plan_period(UUID(plan_period_id))
     time_of_day_explicit = {'v': 'Vormittag', 'n': 'Nachmittag', 'g': 'Ganztag'}
-    persons_with_availables: list[tuple[pm.PersonShow, list[pm.AvailDayShow]]] = []
+    persons_with_availables: list[tuple[schemas.PersonShow, list[schemas.AvailDayShow]]] = []
     for person in persons:
         avail_days_from_service = services.AvailDay.get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id))
         if avail_days_from_service is None:
@@ -126,8 +126,8 @@ def send_avail_days_to_actors(plan_period_id: str):
     return True
 
 
-def send_online_availables_to_dispatcher(persons_with_availables: list[tuple[pm.PersonShow, list[pm.AvailDayShow]]],
-                                         plan_period: pm.PlanPeriod, dispatcher: pm.Person):
+def send_online_availables_to_dispatcher(persons_with_availables: list[tuple[schemas.PersonShow, list[schemas.AvailDayShow]]],
+                                         plan_period: schemas.PlanPeriod, dispatcher: schemas.Person):
     """Die online abgegebenen Termine werden per E-Mail an den Dispatcher gesendet."""
 
     text_content = '\n'.join([f'{p.f_name} {p.l_name}: {", ".join([av_d.day.strftime("%d.%m.") + f" ({av_d.time_of_day.value})" for av_d in av])}'
