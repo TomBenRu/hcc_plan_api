@@ -1,4 +1,5 @@
 import datetime
+import json
 import pickle
 import secrets
 from typing import Optional, Union
@@ -22,7 +23,7 @@ class Person:
     @db_session
     def get_user_by_id(user_id: UUID) -> schemas.Person:
         person = models.Person[user_id]
-        return schemas.Person.from_orm(person)
+        return schemas.Person.model_validate(person)
 
     @staticmethod
     @db_session
@@ -34,8 +35,8 @@ class Person:
         project = models.Person[admin_id].project
         person.project = project
         person.password = hashed_psw
-        new_person = models.Person(**person.dict())
-        return {'person': schemas.PersonShow.from_orm(new_person), 'password': password}
+        new_person = models.Person(**person.model_dump())
+        return {'person': schemas.PersonShow.model_validate(new_person), 'password': password}
 
     @staticmethod
     @db_session
@@ -45,14 +46,14 @@ class Person:
 
         person_db = models.Person[user_id]
         person_db.password = hashed_psw
-        return schemas.Person.from_orm(person_db), new_psw
+        return schemas.Person.model_validate(person_db), new_psw
 
     @staticmethod
     @db_session
     def delete_person_from_project(person_id: UUID):
         person_to_delete = models.Person[person_id]
         person_to_delete.delete()
-        return schemas.Person.from_orm(person_to_delete)
+        return schemas.Person.model_validate(person_to_delete)
 
     @staticmethod
     @db_session
@@ -68,7 +69,7 @@ class Person:
         else:
             person_in_db.team_of_actor = None
         person_in_db.set(f_name=person.f_name, l_name=person.l_name)
-        return schemas.PersonShow.from_orm(person_in_db)
+        return schemas.PersonShow.model_validate(person_in_db)
 
     @staticmethod
     @db_session
@@ -77,20 +78,20 @@ class Person:
             persons = models.Person[admin_id].project_of_admin.persons
         except Exception as e:
             raise CustomError(f'Error: {e}')
-        return [schemas.PersonShow.from_orm(p) for p in persons]
+        return [schemas.PersonShow.model_validate(p) for p in persons]
 
     @staticmethod
     @db_session
     def get_persons__from_plan_period(plan_period_id: UUID) -> list[schemas.PersonShow]:
         team_db = models.PlanPeriod.get_for_update(id=plan_period_id).team
-        return [schemas.PersonShow.from_orm(p) for p in team_db.actors]
+        return [schemas.PersonShow.model_validate(p) for p in team_db.actors]
 
     @staticmethod
     @db_session
     def find_user_by_email(email: str) -> schemas.PersonShow | None:
         person = models.Person.get(lambda p: p.email == email)
         if person:
-            return schemas.PersonShow.from_orm(person)
+            return schemas.PersonShow.model_validate(person)
         return None
 
     @staticmethod
@@ -99,12 +100,12 @@ class Person:
         user = models.Person[person_id]
         hashed_psw = utils.hash_psw(new_password)
         user.set(email=new_email, password=hashed_psw)
-        return schemas.Person.from_orm(user)
+        return schemas.Person.model_validate(user)
 
     @staticmethod
     @db_session
     def get_actors_in_dispatcher_teams(dispatcher_id: UUID) -> list[schemas.PersonShow]:
-        return [schemas.PersonShow.from_orm(p) for p in models.Person[dispatcher_id].teams_of_dispatcher.actors]
+        return [schemas.PersonShow.model_validate(p) for p in models.Person[dispatcher_id].teams_of_dispatcher.actors]
 
 
 class Team:
@@ -113,14 +114,14 @@ class Team:
     def update_team_from_project(team_id: UUID, new_team_name: str):
         team_to_update = models.Team[team_id]
         team_to_update.name = new_team_name
-        return schemas.Team.from_orm(team_to_update)
+        return schemas.Team.model_validate(team_to_update)
 
     @staticmethod
     @db_session
     def delete_team_from_project(team_id: UUID):
         team_to_delete = models.Team[team_id]
         team_to_delete.delete()
-        return schemas.Team.from_orm(team_to_delete)
+        return schemas.Team.model_validate(team_to_delete)
 
     @staticmethod
     @db_session
@@ -129,19 +130,19 @@ class Team:
             teams = models.Person[admin_id].project_of_admin.teams
         except Exception as e:
             raise CustomError(f'Error: {e}')
-        return [schemas.Team.from_orm(t) for t in teams]
+        return [schemas.Team.model_validate(t) for t in teams]
 
     @staticmethod
     @db_session
     def get_teams_of_dispatcher(dispatcher_id: UUID) -> list[schemas.Team]:
-        return [schemas.Team.from_orm(t) for t in models.Person[dispatcher_id].teams_of_dispatcher]
+        return [schemas.Team.model_validate(t) for t in models.Person[dispatcher_id].teams_of_dispatcher]
 
     @staticmethod
     @db_session
     def create_new_team(team: schemas.TeamCreate, person_id: str):
         person = models.Person[UUID(person_id)]
         new_team = models.Team(name=team.name, dispatcher=person)
-        return schemas.TeamShow.from_orm(new_team)
+        return schemas.TeamShow.model_validate(new_team)
 
 
 class Project:
@@ -149,14 +150,14 @@ class Project:
     @db_session
     def get_project_from_user_id(user_id) -> schemas.Project:
         project = models.Person[user_id].project
-        return schemas.Project.from_orm(project)
+        return schemas.Project.model_validate(project)
 
     @staticmethod
     @db_session
     def update_project_name(user_id: UUID, project_name: str):
         project = models.Person[user_id].project_of_admin
         project.name = project_name
-        return schemas.Project.from_orm(project)
+        return schemas.Project.model_validate(project)
 
     @staticmethod
     @db_session
@@ -170,7 +171,7 @@ class Project:
                                    username=person.username, password=hashed_psw,
                                    project=new_project, project_of_admin=new_project)
 
-        return {'admin': schemas.PersonShow.from_orm(new_person), 'password': password}
+        return {'admin': schemas.PersonShow.model_validate(new_person), 'password': password}
 
     @staticmethod
     @db_session
@@ -181,7 +182,7 @@ class Project:
         for team in project_to_delete.teams:
             team.delete()
         project_to_delete.delete()
-        return schemas.Project.from_orm(project_to_delete)
+        return schemas.Project.model_validate(project_to_delete)
 
 
 class AvailDay:
@@ -212,7 +213,7 @@ class AvailDay:
 
             av_days = {models.AvailDay(day=d, time_of_day=TimeOfDay(v), availables=availables)
                        for d, v in dates.items() if v != 'x'}
-            plan_periods.append(schemas.PlanPeriod.from_orm(models.PlanPeriod[pp_id]))
+            plan_periods.append(schemas.PlanPeriod.model_validate(models.PlanPeriod[pp_id]))
 
         return plan_periods
 
@@ -221,7 +222,7 @@ class AvailDay:
     def get_avail_days_from_planperiod(planperiod_id: UUID) -> dict[UUID, dict[str, Union[str, schemas.AvailDay]]]:
         availabless = list(models.PlanPeriod[planperiod_id].availabless)
         avail_days = {availables.person.id: {'notes': availables.notes,
-                                             'days': [schemas.AvailDay.from_orm(av_d) for av_d in
+                                             'days': [schemas.AvailDay.model_validate(av_d) for av_d in
                                                       list(availables.avail_days)]}
                       for availables in availabless}
         return avail_days
@@ -239,14 +240,14 @@ class AvailDay:
             '-----------------------------------------------------------------------------------------------------------')
         if not availables:
             return
-        return [schemas.AvailDayShow.from_orm(ad) for ad in availables.avail_days]
+        return [schemas.AvailDayShow.model_validate(ad) for ad in availables.avail_days]
 
 
 class PlanPeriod:
     @staticmethod
     @db_session
     def get_open_plan_periods(user_id: UUID) -> list[schemas.PlanPerEtFilledIn]:
-        person = models.Person.get(lambda p: p.id == user_id)
+        person = models.Person.get(id=user_id)
         actor_team = person.team_of_actor
         plan_periods = models.PlanPeriod.select(lambda pp: pp.team == actor_team and not pp.closed)
 
@@ -257,7 +258,7 @@ class PlanPeriod:
             else:
                 filled_in = True if list(pp.availabless.select(lambda av: av.person == person).first().avail_days) else False
 
-            plan_p_et_filled_in.append(schemas.PlanPerEtFilledIn(plan_period=schemas.PlanPeriodShow.from_orm(pp),
+            plan_p_et_filled_in.append(schemas.PlanPerEtFilledIn(plan_period=schemas.PlanPeriodShow.model_validate(pp),
                                                                  filled_in=filled_in))
             plan_p_et_filled_in.sort(key=lambda pp_e_fi: pp_e_fi.plan_period.start)
         return plan_p_et_filled_in
@@ -276,7 +277,7 @@ class PlanPeriod:
     @db_session
     def get_planperiods_of_team(team_id: UUID) -> list[schemas.PlanPeriod]:
         planperiods = models.Team[team_id].plan_periods
-        return [schemas.PlanPeriod.from_orm(pp) for pp in planperiods]
+        return [schemas.PlanPeriod.model_validate(pp) for pp in planperiods]
 
     @staticmethod
     @db_session
@@ -286,7 +287,7 @@ class PlanPeriod:
         planperiod_db.set(start=planperiod.start, end=planperiod.end, deadline=planperiod.deadline,
                           closed=planperiod.closed, notes=planperiod.notes)
 
-        return schemas.PlanPeriod.from_orm(planperiod_db)
+        return schemas.PlanPeriod.model_validate(planperiod_db)
 
     @staticmethod
     @db_session
@@ -308,18 +309,18 @@ class PlanPeriod:
 
         plan_period = models.PlanPeriod(start=date_start, end=date_end, deadline=deadline, notes=notes,
                                         team=models.Team.get(lambda t: t.id == UUID(team_id)))
-        return schemas.PlanPeriod.from_orm(plan_period)
+        return schemas.PlanPeriod.model_validate(plan_period)
 
     @staticmethod
     @db_session
     def get_planperiod(pp_id: UUID) -> schemas.PlanPeriod:
-        return schemas.PlanPeriod.from_orm(models.PlanPeriod[pp_id])
+        return schemas.PlanPeriod.model_validate(models.PlanPeriod[pp_id])
 
     @staticmethod
     @db_session
     def delete_planperiod_from_team(planperiod_id: UUID):
         planperiod_to_delete = models.PlanPeriod[planperiod_id]
-        deleted_planperiod = schemas.PlanPeriod.from_orm(planperiod_to_delete)
+        deleted_planperiod = schemas.PlanPeriod.model_validate(planperiod_to_delete)
         planperiod_to_delete.delete()
         return deleted_planperiod
 
@@ -332,7 +333,7 @@ class Availables:
                                         if (availables.notes or availables.avail_days)])
         persons_without_availables = [person for person in models.PlanPeriod[UUID(plan_period_id)].team.actors
                                       if person not in persons_with_availables]
-        return [schemas.Person.from_orm(p) for p in persons_without_availables]
+        return [schemas.Person.model_validate(p) for p in persons_without_availables]
 
 
 class APSchedulerJob:
@@ -340,7 +341,15 @@ class APSchedulerJob:
     @db_session
     def get_scheduler_jobs() -> list[schemas.APSchedulerJob]:
         jobs_db = models.APSchedulerJob.select()
-        jobs = [schemas.APSchedulerJob.from_orm(job_db) for job_db in jobs_db]
+        print(f"{[job.to_dict() for job in jobs_db]=}")
+        print(f"{pickle.loads([job.to_dict() for job in jobs_db][0]['job'])=}")
+        print(f"{type(pickle.loads([job.to_dict() for job in jobs_db][0]['job']))=}")
+        jobs_dicts = [job.to_dict() for job in jobs_db]
+        for job_dict in jobs_dicts:
+            job_dict['plan_period'] = schemas.PlanPeriod.model_validate(models.PlanPeriod.get(id=job_dict['plan_period']))
+            job_dict['job'] = pickle.loads(job_dict['job'])
+
+        jobs = [schemas.APSchedulerJob.model_validate(job) for job in jobs_dicts]
 
         return jobs
 
@@ -366,7 +375,7 @@ class APSchedulerJob:
         for job_db_to_delete in jobs_db_to_delete:
             print(f'{job_db_to_delete=}')
             job_db_to_delete.delete()
-        jobs_db_to_delete = [schemas.APSchedulerJob.from_orm(jd) for jd in jobs_db_to_delete]
+        jobs_db_to_delete = [schemas.APSchedulerJob.model_validate(jd) for jd in jobs_db_to_delete]
         return jobs_db_to_delete
 
 

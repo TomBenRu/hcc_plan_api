@@ -1,4 +1,4 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -28,4 +28,8 @@ class Settings(BaseSettings):
         env_file = '.env'
 
 
-settings = Settings()
+try:
+    settings = Settings()
+except Exception as e:
+    print(f'Trying to get Settings from Environment:\n{e}\nNow I check the .env-file:')
+    settings = Settings(_env_file='.env')

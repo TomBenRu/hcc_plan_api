@@ -548,7 +548,7 @@ class CreateNewProject(CommonTopLevel):
         token = schemas.Token(access_token=self.access_token, token_type='bearer')
         print(f'{person=}\n{project=}\n{token=}')
         response = requests.post(f'{self.parent.host}/su/account',
-                                 json={'person': person.dict(), 'project': project.dict()},
+                                 json={'person': person.model_dump(), 'project': project.model_dump()},
                                  headers={'Authorization': f'Bearer {self.access_token}'})
         self.parent.new_project_data = response.json()
         self.destroy()
@@ -699,7 +699,7 @@ class CreatePerson(CommonTopLevel):
                                  email=EmailStr(self.entry_email.get()), username=EmailStr(self.entry_email.get()),
                                  password=self.entry_password.get())
         response = requests.post(f'{self.parent.host}/admin/person',
-                                 json=person.dict(),
+                                 json=person.model_dump(),
                                  headers={'Authorization': f'Bearer {self.access_token}'})
         self.parent.new_person_data = response.json()
         self.destroy()
@@ -1285,7 +1285,7 @@ class CreateTeam(CommonTopLevel):
         person_id = self.all_persons[self.var_combo_dispatcher.get()]
 
         response = requests.post(f'{self.parent.host}/admin/team',
-                                 json={'team': team.dict(), 'person': {'id': str(person_id)}},
+                                 json={'team': team.model_dump(), 'person': {'id': str(person_id)}},
                                  headers={'Authorization': f'Bearer {self.access_token}'})
         data = response.json()
         try:

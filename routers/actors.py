@@ -48,6 +48,7 @@ async def actor_plan_periods_handler(request: Request):
     user_id = token_data.id
 
     formdata = await request.form()
+    print(f'{formdata=}')
 
     plan_periods = services.AvailDay.available_days_to_db(dict(formdata), user_id)
 
@@ -58,7 +59,7 @@ async def actor_plan_periods_handler(request: Request):
     return templates.TemplateResponse('index_actor.html',
                                       context={'request': request, 'name_project': name_project,
                                                'f_name': user.f_name, 'l_name': user.l_name,
-                                               'plan_periods': plan_per_et_filled_in, 'actor_id': user_id,
+                                               'plan_periods': plan_per_et_filled_in, 'actor_id': user.id,
                                                'success': True})
 
 

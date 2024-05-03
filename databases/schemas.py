@@ -4,17 +4,16 @@ from typing import Optional, Set, Any, List, Union
 from uuid import UUID
 
 import apscheduler.job
-from pydantic import BaseModel, Field, EmailStr, conint, validator
+from pydantic import BaseModel, Field, EmailStr, conint, field_validator, ConfigDict
 from .enums import TimeOfDay
 
 
 class ProjectCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     name: str
     # admin: Optional['Person']
     active: bool
-
-    class Config:
-        orm_mode = True
 
 
 class Project(ProjectCreate):
@@ -26,15 +25,14 @@ class ProjectShow(Project):
 
 
 class PersonCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     f_name: str
     l_name: str
     email: EmailStr
     username: str
-    password: Optional[str]
-    project: Optional[Project]
-
-    class Config:
-        orm_mode = True
+    password: Optional[str] = None
+    project: Optional[Project] = None
 
 
 class Person(PersonCreate):
@@ -43,21 +41,20 @@ class Person(PersonCreate):
 
 
 class PersonShow(Person):
-    project_of_admin: Optional[Project]
+    project_of_admin: Optional[Project] = None
     teams_of_dispatcher: List['Team']
-    team_of_actor: Optional['Team']
+    team_of_actor: Optional['Team'] = None
 
-    @validator('teams_of_dispatcher', pre=True, allow_reuse=True)
+    @field_validator('teams_of_dispatcher')
     def pony_set_to_list(cls, values):
         return [v for v in values]
 
 
 class TeamCreate(BaseModel):
-    name: str
-    dispatcher: Optional[Person]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    name: str
+    dispatcher: Optional[Person] = None
 
 
 class Team(TeamCreate):
@@ -70,11 +67,10 @@ class TeamShow(Team):
 
 
 class AvailablesCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     person: Person
     notes: str
-
-    class Config:
-        orm_mode = True
 
 
 class Availables(AvailablesCreate):
@@ -85,20 +81,19 @@ class AvailablesShow(Availables):
     plan_period: 'PlanPeriod'
     avail_days: List['AvailDay']
 
-    @validator('avail_days', pre=True, allow_reuse=True)
+    @field_validator('avail_days')
     def pony_set_to_list(cls, values):
         return [v for v in values]
 
 
 class PlanPeriodCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     start: date
     end: date
     deadline: date
-    notes: Optional[str]
+    notes: Optional[str] = None
     team: Team
-
-    class Config:
-        orm_mode = True
 
 
 class PlanPeriod(PlanPeriodCreate):
@@ -140,7 +135,7 @@ class PlanPeriodShow(PlanPeriod):
             kw__day_wd[day.isocalendar()[1]].append((day, date.weekday(day)))
         return kw__day_wd
 
-    @validator('availabless', pre=True, allow_reuse=True)
+    @field_validator('availabless')
     def pony_set_to_list(cls, values):
         return [v for v in values]
 
@@ -151,11 +146,10 @@ class PlanPerEtFilledIn(BaseModel):
 
 
 class AvailDayCreate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     day: date
     time_of_day: TimeOfDay
-
-    class Config:
-        orm_mode = True
 
 
 class AvailDay(AvailDayCreate):
@@ -174,26 +168,25 @@ class AvailDayShow(AvailDay):
 
 
 class RemainderDeadlineCreate(BaseModel):
-    plan_period: PlanPeriod
-    trigger: Optional[str]
-    run_date: datetime
-    func: Optional[str]
-    args: List = []
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    plan_period: PlanPeriod
+    trigger: Optional[str] = None
+    run_date: datetime
+    func: Optional[str] = None
+    args: List = []
 
 
 class APSchedulerJob(BaseModel):
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+
     plan_period: PlanPeriod
-    job: dict
+    job: apscheduler.job.Job
 
-    @validator('job', pre=True, allow_reuse=True)
-    def pickled_job_to_job(cls, pickled_job):
-        return pickle.loads(pickled_job).__getstate__()
-
-    class Config:
-        orm_mode = True
+    # @field_validator('job')
+    # def pickled_job_to_job(cls, pickled_job):
+    #     print('in schema:', pickle.loads(pickled_job))
+    #     return pickle.loads(pickled_job).__getstate__()
 
 
 # --------------------------------------------------------------------------------------
@@ -214,9 +207,9 @@ class TokenData(BaseModel):
     authorizations: List[str]
 
 
-ProjectCreate.update_forward_refs(**locals())
-Project.update_forward_refs(**locals())
-PersonShow.update_forward_refs(**locals())
-PersonCreate.update_forward_refs(**locals())
-AvailablesShow.update_forward_refs(**locals())
-TeamShow.update_forward_refs(**locals())
+ProjectCreate.model_rebuild()
+Project.model_rebuild()
+PersonShow.model_rebuild()
+PersonCreate.model_rebuild()
+AvailablesShow.model_rebuild()
+TeamShow.model_rebuild()

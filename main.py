@@ -21,9 +21,9 @@ def scheduler_startup():
     scheduler.start()
     print('scheduler started')
     jobs: list[schemas.APSchedulerJob] = services.APSchedulerJob.get_scheduler_jobs()
-    print(f'To load: {[asj.job for asj in jobs]}')
+    print(f'To load: {[asj.job.__getstate__() for asj in jobs]}')
     for job in jobs:
-        scheduler.add_job(**job.job)
+        scheduler.add_job(**job.job.__getstate__())
         print(f'geladene Jobs: {[j.__getstate__() for j in scheduler.get_jobs()]}')
 
 
