@@ -104,7 +104,7 @@ class PlanPeriod(PlanPeriodCreate):
 class PlanPeriodShow(PlanPeriod):
     availabless: List[AvailablesShow]
 
-    def avail_days(self, actor_id: int) -> dict[date, Any]:
+    def avail_days(self, actor_id: UUID) -> dict[date, Any]:
         av_days = {}
         for available in self.availabless:
             if available.person.id != actor_id:
@@ -113,7 +113,7 @@ class PlanPeriodShow(PlanPeriod):
                 av_days[av_d.day] = av_d.time_of_day.value
         return av_days
 
-    def notes_of_availables(self, actor_id: int) -> str:
+    def notes_of_availables(self, actor_id: UUID) -> str:
         for avail in self.availabless:
             if avail.person.id == actor_id:
                 return avail.notes

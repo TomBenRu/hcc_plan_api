@@ -32,6 +32,40 @@ def send_new_password(person: schemas.Person, project: str, new_psw: str):
     return True
 
 
+def send_confirmed_avail_days(person_id: UUID):
+    """sendet alle verfügbaren Tage der nicht geschlossenen Planperioden der betreffenden Person per E-Mail"""
+    person = services.Person.get_user_by_id(person_id)
+    plan_periods_et_filled_in = services.PlanPeriod.get_open_plan_periods(person_id)
+    text_avail_days = ''
+    for p in plan_periods_et_filled_in:
+        if not p.filled_in:
+            continue
+        text_avail_days += f'{p.plan_period.start.strftime("%d.%m.%y")} - {p.plan_period.end.strftime("%d.%m.%y")}:\n'
+        avail_days = p.plan_period.avail_days(person_id)
+        text_avail_days += ', '.join([f'{d:%d.%m.} ({time_of_day})' for d, time_of_day in avail_days.items()])
+    send_to = person.email
+    msg = EmailMessage()
+    msg['From'] = SEND_ADDRESS
+    msg['To'] = send_to
+    msg['Subject'] = 'hcc - verfügbare Tage'
+    msg.set_content(
+        f'Hallo {person.f_name} {person.l_name},\n\n'
+        f'deine Spieloptionen wurden erfolgreich übertragen.\n\n'
+        f'Das sind deine soeben übertragenen verfügbare Tage:\n\n'
+        f'Abkürzungen: g = ganztags, v = vormittags, n = nachmittags\n\n'
+        f'{text_avail_days} \n\n'
+        f'Viele Grüsse\nTeam hcc-dispo\n\n'
+        f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---'
+    )
+
+    with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(SEND_ADDRESS, SEND_PASSWORD)
+        smtp.send_message(msg)
+
+
 def send_remainder_confirmation(planperiod: schemas.PlanPeriod, persons: list[schemas.Person]):
     text_empfaenger = ', '.join([f'{p.f_name} {p.l_name}' for p in persons])
     send_to = planperiod.team.dispatcher.email
@@ -44,7 +78,8 @@ def send_remainder_confirmation(planperiod: schemas.PlanPeriod, persons: list[sc
         f'es wurden Remainder verschickt.\n'
         f'Planungszeitraum: {planperiod.start.strftime("%d.%m.%y")} - {planperiod.end.strftime("%d.%m.%y")}\n'
         f'Empfänger: {text_empfaenger}\n\n'
-        f'Team hcc-dispo'
+        f'Team hcc-dispo \n\n'
+        f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---'
     )
     with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
         smtp.ehlo()

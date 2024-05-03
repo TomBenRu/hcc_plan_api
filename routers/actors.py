@@ -8,6 +8,7 @@ from databases import services
 from databases.enums import AuthorizationTypes
 from oauth2_authentication import get_current_user_cookie, verify_actor_username
 from utilities import send_mail
+from utilities.send_mail import send_remainder_confirmation, send_confirmed_avail_days
 
 templates = Jinja2Templates(directory='templates')
 
@@ -48,13 +49,14 @@ async def actor_plan_periods_handler(request: Request):
     user_id = token_data.id
 
     formdata = await request.form()
-    print(f'{formdata=}')
 
     plan_periods = services.AvailDay.available_days_to_db(dict(formdata), user_id)
 
     user = services.Person.get_user_by_id(user_id)
     name_project = user.project.name
     plan_per_et_filled_in = services.PlanPeriod.get_open_plan_periods(user_id)
+
+    send_confirmed_avail_days(user.id)
 
     return templates.TemplateResponse('index_actor.html',
                                       context={'request': request, 'name_project': name_project,

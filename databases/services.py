@@ -341,9 +341,6 @@ class APSchedulerJob:
     @db_session
     def get_scheduler_jobs() -> list[schemas.APSchedulerJob]:
         jobs_db = models.APSchedulerJob.select()
-        print(f"{[job.to_dict() for job in jobs_db]=}")
-        print(f"{pickle.loads([job.to_dict() for job in jobs_db][0]['job'])=}")
-        print(f"{type(pickle.loads([job.to_dict() for job in jobs_db][0]['job']))=}")
         jobs_dicts = [job.to_dict() for job in jobs_db]
         for job_dict in jobs_dicts:
             job_dict['plan_period'] = schemas.PlanPeriod.model_validate(models.PlanPeriod.get(id=job_dict['plan_period']))
