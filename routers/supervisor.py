@@ -12,6 +12,7 @@ router = APIRouter(prefix='/su', tags=['Superuser'])
 @router.post('/account')
 async def new_account(person: schemas.PersonCreate, project: schemas.ProjectCreate,
                       access_token: str = Depends(oauth2_scheme)):
+    print(f'{access_token=}\n{person=}\n{project=}')
     try:
         verify_access_token(access_token, AuthorizationTypes.supervisor)
     except Exception as e:

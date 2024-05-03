@@ -546,6 +546,7 @@ class CreateNewProject(CommonTopLevel):
         project = schemas.ProjectCreate(name=self.entry_projectname.get(), active=self.var_chk_active.get())
 
         token = schemas.Token(access_token=self.access_token, token_type='bearer')
+        print(f'{person=}\n{project=}\n{token=}')
         response = requests.post(f'{self.parent.host}/su/account',
                                  json={'person': person.dict(), 'project': project.dict()},
                                  headers={'Authorization': f'Bearer {self.access_token}'})

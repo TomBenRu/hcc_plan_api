@@ -167,7 +167,7 @@ class Project:
 
         new_project = models.Project(name=project.name)
         new_person = models.Person(f_name=person.f_name, l_name=person.l_name, email=person.email,
-                                   password=hashed_psw,
+                                   username=person.username, password=hashed_psw,
                                    project=new_project, project_of_admin=new_project)
 
         return {'admin': schemas.PersonShow.from_orm(new_person), 'password': password}
@@ -280,7 +280,7 @@ class PlanPeriod:
 
     @staticmethod
     @db_session
-    def update_1_planperiod(planperiod: schemas.PlanPeriod) -> schemas.PlanPeriod:
+    def update_planperiod(planperiod: schemas.PlanPeriod) -> schemas.PlanPeriod:
         planperiod_db = models.PlanPeriod[planperiod.id]
 
         planperiod_db.set(start=planperiod.start, end=planperiod.end, deadline=planperiod.deadline,

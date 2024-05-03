@@ -55,7 +55,7 @@ def send_remainder_confirmation(planperiod: schemas.PlanPeriod, persons: list[sc
 
 
 def send_remainder_deadline(plan_period_id: str):
-    planperiod = get_planperiod(UUID(plan_period_id))
+    planperiod = services.PlanPeriod.get_planperiod(UUID(plan_period_id))
     persons = services.Availables.get_not_feedbacked_availables(plan_period_id)
     text_planperiod = f"Zeitraum: {planperiod.start.strftime('%d.%m.%y')} - {planperiod.end.strftime('%d.%m.%y')}"
     for person in persons:
@@ -71,7 +71,8 @@ def send_remainder_deadline(plan_period_id: str):
                         f'- {text_planperiod}.\n\n'
                         f'Falls du dies bereits per Excell-Tabelle via Email getan hast, vergiss diesen Remainder.\n'
                         f'Andernfalls solltest du das noch heute erledigen, damit ich dich bei der Planung der '
-                        f'Einsätze berücksichtigen kann.\n\n'
+                        f'Einsätze berücksichtigen kann.\n'
+                        f'Homepage Planungsservice: https://hcc-plan-api.onrender.com/\n\n'
                         f'{planperiod.team.dispatcher.f_name} {planperiod.team.dispatcher.l_name}\n'
                         f'(Spielplanung {person.project.name})\n'
                         f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---')

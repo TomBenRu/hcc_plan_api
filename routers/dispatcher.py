@@ -91,7 +91,7 @@ def update_planperiod(planperiod: schemas.PlanPeriod, access_token: str = Depend
     user_id = token_data.id
 
     try:
-        planperiod_updated = services.PlanPeriod.update_1_planperiod(planperiod)
+        planperiod_updated = services.PlanPeriod.update_planperiod(planperiod)
     except Exception as e:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Error: {e}')
 
