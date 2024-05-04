@@ -43,6 +43,7 @@ def send_confirmed_avail_days(person_id: UUID):
         text_avail_days += f'{p.plan_period.start.strftime("%d.%m.%y")} - {p.plan_period.end.strftime("%d.%m.%y")}:\n'
         avail_days = p.plan_period.avail_days(person_id)
         text_avail_days += ', '.join([f'{d:%d.%m.} ({time_of_day})' for d, time_of_day in avail_days.items()])
+        text_avail_days += '\n\n'
     send_to = person.email
     msg = EmailMessage()
     msg['From'] = SEND_ADDRESS
@@ -53,7 +54,7 @@ def send_confirmed_avail_days(person_id: UUID):
         f'deine Spieloptionen wurden erfolgreich übertragen.\n\n'
         f'Das sind deine soeben übertragenen verfügbare Tage:\n\n'
         f'Abkürzungen: g = ganztags, v = vormittags, n = nachmittags\n\n'
-        f'{text_avail_days} \n\n'
+        f'{text_avail_days}\n'
         f'Viele Grüsse\nTeam hcc-dispo\n\n'
         f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---'
     )
