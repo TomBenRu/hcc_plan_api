@@ -42,7 +42,11 @@ def send_confirmed_avail_days(person_id: UUID):
             continue
         text_avail_days += f'{p.plan_period.start.strftime("%d.%m.%y")} - {p.plan_period.end.strftime("%d.%m.%y")}:\n'
         avail_days = p.plan_period.avail_days(person_id)
-        text_avail_days += ', '.join([f'{d:%d.%m.} ({time_of_day})' for d, time_of_day in avail_days.items()])
+        avail_days = ', '.join(sorted([f'{d:%d.%m.} ({time_of_day})' for d, time_of_day in avail_days.items()],
+                                            key=lambda d: d))
+        text_avail_days += f'{avail_days}'
+        notes_of_availables = p.plan_period.notes_of_availables(person_id) or 'Keine'
+        text_avail_days += f'\nAnmerkungen:\n{notes_of_availables}'
         text_avail_days += '\n\n'
     send_to = person.email
     msg = EmailMessage()
