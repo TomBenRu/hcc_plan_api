@@ -183,10 +183,10 @@ class APSchedulerJob(BaseModel):
     plan_period: PlanPeriod
     job: apscheduler.job.Job
 
-    # @field_validator('job')
-    # def pickled_job_to_job(cls, pickled_job):
-    #     print('in schema:', pickle.loads(pickled_job))
-    #     return pickle.loads(pickled_job).__getstate__()
+    @field_validator('job', mode='before')
+    def pickled_job_to_job(cls, pickled_job):
+        print('in schema:', pickle.loads(pickled_job))
+        return pickle.loads(pickled_job)
 
 
 # --------------------------------------------------------------------------------------

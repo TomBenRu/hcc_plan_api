@@ -1,5 +1,5 @@
 schemas:
-@validator -> @field_validator, pre u. reuse kommen weg
+@validator -> @field_validator, pre u. reuse kommen weg; mode='before', falls der Validierer vor der Validierung durch das Feld ausgeführt werden soll.
 class Config: kommt weg, dafür model_config = ConfigDict(from_attributes=True) an den Anfang der Klasse
 Felder mit Optional sind nicht automatisch None, wenn kein Wert übergeben wird.
 update_forward_refs wird durch model_rebuild ersetzt

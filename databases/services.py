@@ -341,14 +341,7 @@ class APSchedulerJob:
     @db_session
     def get_scheduler_jobs() -> list[schemas.APSchedulerJob]:
         jobs_db = models.APSchedulerJob.select()
-        jobs_dicts = [job.to_dict() for job in jobs_db]
-        for job_dict in jobs_dicts:
-            job_dict['plan_period'] = schemas.PlanPeriod.model_validate(models.PlanPeriod.get(id=job_dict['plan_period']))
-            job_dict['job'] = pickle.loads(job_dict['job'])
-
-        jobs = [schemas.APSchedulerJob.model_validate(job) for job in jobs_dicts]
-
-        return jobs
+        return [schemas.APSchedulerJob.model_validate(job) for job in jobs_db]
 
     @staticmethod
     @db_session
