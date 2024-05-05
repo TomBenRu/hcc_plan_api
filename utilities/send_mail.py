@@ -55,7 +55,7 @@ def send_confirmed_avail_days(person_id: UUID):
     msg['Subject'] = 'hcc - verfügbare Tage'
     msg.set_content(
         f'Hallo {person.f_name} {person.l_name},\n\n'
-        f'deine Spieloptionen wurden erfolgreich übertragen.\n\n'
+        f'deine Spieloptionen wurden von hcc-plan-api.onrender.com erfolgreich übertragen.\n\n'
         f'Das sind deine soeben übertragenen verfügbare Tage:\n\n'
         f'Abkürzungen: g = ganztags, v = vormittags, n = nachmittags\n\n'
         f'{text_avail_days}\n'
