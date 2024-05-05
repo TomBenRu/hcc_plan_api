@@ -32,12 +32,8 @@ def send_new_password(person: schemas.Person, project: str, new_psw: str):
     msg.set_content(f'Hallo {person.f_name} {person.l_name},\n\ndein neues Passwort für den Online-Zugang lautet:\n\n'
                     f'{new_psw}\n\n'
                     f'Viele Grüße\nTeam hcc-plan')
-    with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.ehlo()
-        smtp.login(SEND_ADDRESS, SEND_PASSWORD)
-        smtp.send_message(msg)
+
+    send_email(msg)
 
     return True
 
@@ -94,12 +90,8 @@ def send_remainder_confirmation(planperiod: schemas.PlanPeriod, persons: list[sc
         f'Team hcc-dispo \n\n'
         f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---'
     )
-    with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.ehlo()
-        smtp.login(SEND_ADDRESS, SEND_PASSWORD)
-        smtp.send_message(msg)
+
+    send_email(msg)
 
 
 def send_remainder_deadline(plan_period_id: str):
@@ -124,12 +116,9 @@ def send_remainder_deadline(plan_period_id: str):
                         f'{planperiod.team.dispatcher.f_name} {planperiod.team.dispatcher.l_name}\n'
                         f'(Spielplanung {person.project.name})\n'
                         f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---')
-        with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.ehlo()
-            smtp.login(SEND_ADDRESS, SEND_PASSWORD)
-            smtp.send_message(msg)
+
+        send_email(msg)
+
     services.APSchedulerJob.delete_job_from_db(plan_period_id)
     send_remainder_confirmation(planperiod, persons)
     return True
@@ -165,12 +154,9 @@ def send_avail_days_to_actors(plan_period_id: str):
                         f'{plan_period.team.dispatcher.f_name} {plan_period.team.dispatcher.l_name}\n'
                         f'(Spielplanung {person.project.name})\n'
                         f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---')
-        with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.ehlo()
-            smtp.login(SEND_ADDRESS, SEND_PASSWORD)
-            smtp.send_message(msg)
+
+        send_email(msg)
+
     send_online_availables_to_dispatcher(persons_with_availables, plan_period, plan_period.team.dispatcher)
     return True
 
@@ -188,9 +174,5 @@ def send_online_availables_to_dispatcher(persons_with_availables: list[tuple[sch
                      f'{plan_period.start.strftime("%d.%m.%Y")}-{plan_period.end.strftime("%d.%m.%Y")}, ' \
                      f'Team {plan_period.team.name}'
     msg.set_content(f'{text_content}')
-    with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.ehlo()
-        smtp.login(SEND_ADDRESS, SEND_PASSWORD)
-        smtp.send_message(msg)
+
+    send_email(msg)
