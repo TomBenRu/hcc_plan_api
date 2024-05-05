@@ -77,7 +77,7 @@ def delete_planperiod(planperiod_id: str, access_token: str = Depends(oauth2_sch
     try:
         scheduler.remove_job(planperiod_id)
     except Exception as e:
-        print(f'Fehler: {e}')
+        print(f'Fehler in Route /dispatcher/planperiod: {e}')
 
     return deleted_planperiod
 
