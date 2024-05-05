@@ -59,6 +59,8 @@ def send_confirmed_avail_days(person_id: UUID):
         f'Das sind deine soeben übertragenen verfügbare Tage:\n\n'
         f'Abkürzungen: g = ganztags, v = vormittags, n = nachmittags\n\n'
         f'{text_avail_days}\n'
+        f'Du kannst deine Spieloptionen jederzeit bis zur beim jeweiligen Planungszeitraum angegebenen Deadline '
+        f'ändern oder ergänzen.\n\n'
         f'Viele Grüsse\nTeam hcc-dispo\n\n'
         f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---'
     )
