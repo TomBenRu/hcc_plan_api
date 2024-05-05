@@ -363,7 +363,6 @@ class APSchedulerJob:
         plan_period_db = models.PlanPeriod.get(id=UUID(job_id))
         jobs_db_to_delete = models.APSchedulerJob.select(lambda asp: asp.plan_period == plan_period_db)
         for job_db_to_delete in jobs_db_to_delete:
-            print(f'{job_db_to_delete=}')
             job_db_to_delete.delete()
         jobs_db_to_delete = [schemas.APSchedulerJob.model_validate(jd) for jd in jobs_db_to_delete]
         return jobs_db_to_delete

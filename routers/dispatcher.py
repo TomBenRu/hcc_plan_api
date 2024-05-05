@@ -78,7 +78,7 @@ def delete_planperiod(planperiod_id: str, access_token: str = Depends(oauth2_sch
         scheduler.remove_job(planperiod_id)
     except Exception as e:
         print(f'Fehler in Route /dispatcher/planperiod: {e}')
-
+    print(f'rescheduled_jobs: {[j for j in scheduler.get_jobs()]}')
     return deleted_planperiod
 
 
@@ -102,7 +102,7 @@ def update_planperiod(planperiod: schemas.PlanPeriod, access_token: str = Depend
         services.APSchedulerJob.update_job_in_db(job=job)
         print(f'rescheduled_jobs: {[j.__getstate__() for j in scheduler.get_jobs()]}')
     except Exception as e:
-        print(f'Fehler: {e}')
+        print(f'Fehler in Route /dispatcher/planperiod: {e}')
 
     if planperiod_updated.closed:
         send_avail_days_to_actors(str(planperiod.id))
