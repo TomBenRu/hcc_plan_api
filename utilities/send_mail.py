@@ -1,3 +1,4 @@
+import asyncio
 from email.message import EmailMessage
 import smtplib
 from uuid import UUID
@@ -10,6 +11,15 @@ SEND_ADDRESS = settings.settings.send_address
 SEND_PASSWORD = settings.settings.send_password
 POST_AUSG_SERVER = settings.settings.post_ausg_server
 SEND_PORT = settings.settings.send_port
+
+
+def send_email(msg: EmailMessage):
+    with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(SEND_ADDRESS, SEND_PASSWORD)
+        smtp.send_message(msg)
 
 
 def send_new_password(person: schemas.Person, project: str, new_psw: str):
@@ -32,7 +42,7 @@ def send_new_password(person: schemas.Person, project: str, new_psw: str):
     return True
 
 
-def send_confirmed_avail_days(person_id: UUID):
+async def send_confirmed_avail_days(person_id: UUID):
     """sendet alle verfügbaren Tage der nicht geschlossenen Planperioden der betreffenden Person per E-Mail"""
     person = services.Person.get_user_by_id(person_id)
     plan_periods_et_filled_in = services.PlanPeriod.get_open_plan_periods(person_id)
@@ -65,12 +75,8 @@ def send_confirmed_avail_days(person_id: UUID):
         f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---'
     )
 
-    with smtplib.SMTP(POST_AUSG_SERVER, SEND_PORT) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.ehlo()
-        smtp.login(SEND_ADDRESS, SEND_PASSWORD)
-        smtp.send_message(msg)
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, send_email, msg)
 
 
 def send_remainder_confirmation(planperiod: schemas.PlanPeriod, persons: list[schemas.Person]):

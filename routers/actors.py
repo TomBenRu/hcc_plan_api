@@ -56,7 +56,7 @@ async def actor_plan_periods_handler(request: Request):
     name_project = user.project.name
     plan_per_et_filled_in = services.PlanPeriod.get_open_plan_periods(user_id)
 
-    send_confirmed_avail_days(user.id)
+    await send_confirmed_avail_days(user.id)
 
     return templates.TemplateResponse('index_actor.html',
                                       context={'request': request, 'name_project': name_project,
