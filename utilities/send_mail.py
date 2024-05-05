@@ -158,6 +158,7 @@ def send_avail_days_to_actors(plan_period_id: str):
         send_email(msg)
 
     send_online_availables_to_dispatcher(persons_with_availables, plan_period, plan_period.team.dispatcher)
+
     return True
 
 
