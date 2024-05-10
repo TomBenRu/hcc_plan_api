@@ -1,4 +1,5 @@
 {% extends "index_base.html" %}
+
 {% block links %}
     {{ super() }}
     <link rel="stylesheet" href="{{ url_for('static', path='/calendar.css') }}">
@@ -18,25 +19,31 @@
             {% endfor %}
         </div>
     </div>
-    <a class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white" onclick="submit_form()">...Termine übertragen...</a>
+    <a class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white" 
+    hx-post="{{ url_for('actor_plan_periods_handler') }}"
+    hx-trigger="click" 
+    hx-target="#alerts"
+    hx-swap="beforeend"
+    hx-include="#form1">...Termine übertragen...</a>
     <a href="#" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">User</a>
 {% endblock %}
 {% block navbar_small_items %}
-    <a class="w3-bar-item w3-button w3-padding-large" onclick="submit_form()">Termine übertragen</a>
+    <a class="w3-bar-item w3-button w3-padding-large"
+    hx-post="{{ url_for('actor_plan_periods_handler') }}"
+    hx-trigger="click" 
+    hx-target="#alerts"
+    hx-swap="beforeend"
+    hx-include="#form1">Termine übertragen</a>
     <a href="#" class="w3-bar-item w3-button w3-padding-large">User</a>
 {% endblock %}
 
 {% block cont_header %}
-    <p class="w3-xlarge">{{ name_project }}</p>
-    <p class="w3-large">Hallo {{ f_name }} {{ l_name }}.</p>
-    {% if success %}
-        <p>Die Termine wurden erfolgreich übertragen. Du kannst die Bearbeitung der Sperrtermine fortsetzen.</p>
-    {% else %}
-        <p>Hier kannst du deine Sperrtermine der aktuellen Planungsmonate bearbeiten.</p>
-    {% endif %}
+    <h1 class="text-5xl">{{ name_project }}</h1>
+    <p class="text-3xl">Hallo {{ f_name }} {{ l_name }}.</p>
+    <p>Hier kannst du deine Sperrtermine der aktuellen Planungsmonate bearbeiten.</p>
 {% endblock %}
 {% block cont_main %}
-<form method="post" action="{{ url_for('actor_plan_periods_handler') }}" id="form1" class="grid_center">
+<form id="form1" class="grid_center">
     {% for planung_filled_in in plan_periods %}
     
         {% set plan_period = planung_filled_in.plan_period %}
@@ -44,11 +51,11 @@
         {% set deadline = plan_period.deadline %}
         <br id="pp-{{plan_period.start}}" style="margin-bottom: 50px">
         <div class="wrapper">
-            <div class="w3-container w3-dark-grey w3-center" style="position: relative; margin-top: 20px!important; margin-bottom: 0px">
-                <div style="position: absolute; top: 0; right: 5px; color: #d4ff95">
+            <div class="container mx-auto bg-gray-500 text-center relative mt-5 mb-0">
+                <div class="absolute top-0 right-1 text-lime-400">
                     Deadline: {{deadline.day}}.{{deadline.month}}.{{deadline.year}}
                 </div>
-                <h2>vom {{ plan_period.start.day }}.{{ plan_period.start.month }}.{{ plan_period.start.year }} - {{ plan_period.end.day }}.{{ plan_period.end.month }}.{{ plan_period.end.year }}</h2>
+                <h2 class="text-4xl text-white">vom {{ plan_period.start.day }}.{{ plan_period.start.month }}.{{ plan_period.start.year }} - {{ plan_period.end.day }}.{{ plan_period.end.month }}.{{ plan_period.end.year }}</h2>
             </div>
             <div></div>
             <table class="calendar_table" id="period_{{plan_period.id}}">

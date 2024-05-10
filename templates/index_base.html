@@ -4,6 +4,9 @@
     <title>hcc-online</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/remove-me.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     {% block links %}
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
@@ -12,9 +15,9 @@
     <link rel="icon" href="{{ url_for('static', path='/favicon.ico') }}">
     {% endblock %}
     <style>
-    body,h1,h2,h3,h4,h5,h6 {font-family: "Lato", sans-serif}
+    <!-- body,h1,h2,h3,h4,h5,h6 {font-family: "Lato", sans-serif}
     .w3-bar,h1,button {font-family: "Montserrat", sans-serif}
-    .fa-anchor,.fa-coffee {font-size:200px}
+    .fa-anchor,.fa-coffee {font-size:200px} -->
 
     /* Full-width input fields */
     input[type=text], input[type=password] {
@@ -62,9 +65,9 @@
       border-radius: 50%;
     }
 
-    .container {
+    <!-- .container {
       padding: 16px;
-    }
+    } -->
     .padding-top-container {
       padding-top: 48px !important;
       padding-bottom: 20px !important;
@@ -145,7 +148,7 @@
     </style>
   </head>
 <body style="overflow: auto; display: block; background-image: url({{ url_for('static', path='/funny-background-2.png') }}); background-size: cover;">
-
+  <div id="alerts" class="fixed top-7 right-0 m-8 space-y-4"></div>
 {% block navbar %}
 <!-- Navbar -->
 <div class="w3-top">
@@ -171,20 +174,20 @@
 {% endblock %}
 
 <!-- Header -->
-<header class="w3-container w3-dark-grey w3-center padding-top-container">
+<header class="mx-auto bg-gray-600 text-center text-white space-y-5 pt-20 pb-10">
   {% block cont_header %}
-    <h1 class="w3-margin w3-xxlarge">{{ name_project }}</h1>
-    <p class="w3-xlarge">Willkommen beim Online-Service von hcc-plan.</p>
+    <h1 class="text-5xl">{{ name_project }}</h1>
+    <p class="text-3xl">Willkommen beim Online-Service von hcc-plan.</p>
     {% if InvalidCredentials == True %}
-        <p class="w3-xxlarge">Login fehlgeschlagen.</p>
+        <p class="text-3xl">Login fehlgeschlagen.</p>
     {% endif %}
     {% if logged_out == True %}
-        <p class="w3-xxlarge">Logout erfolgreich.</p>
+        <p class="text-3xl">Logout erfolgreich.</p>
     {% endif %}
     {% if account_changed == True %}
-        <p class="w3-xlarge">Deine Zugangsdaten wurden geändert. Um fortzufahren musst du dich erneut einloggen.</p>
+        <p class="text-3xl">Deine Zugangsdaten wurden geändert. Um fortzufahren musst du dich erneut einloggen.</p>
     {% endif %}
-    <p class="w3-xlarge">Zum Fortfahren bitte einloggen.</p>
+    <p class="text-3xl">Zum Fortfahren bitte einloggen.</p>
     <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top" onclick="document.getElementById('login01').style.display='block'">Login</button>
   {% endblock %}
 </header>
