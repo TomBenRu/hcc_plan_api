@@ -20,7 +20,7 @@ def actor_plan_periods(request: Request):
     try:
         token_data = get_current_user_cookie(request, 'hcc_plan_auth', AuthorizationTypes.actor)
     except Exception as e:
-        redirect_url = URL(request.url_for('home')).include_query_params(confirmed_password=False)
+        redirect_url = request.url_for('home')
         return RedirectResponse(redirect_url, status_code=status.HTTP_303_SEE_OTHER)
         # return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Fehler: {e}')
     user_id = token_data.id
@@ -42,23 +42,22 @@ async def actor_plan_periods_handler(request: Request):
     try:
         token_data = get_current_user_cookie(request, 'hcc_plan_auth', AuthorizationTypes.actor)
     except Exception as e:
-        redirect_url = URL(request.url_for('home')).include_query_params(confirmed_password=False)
-        return RedirectResponse(redirect_url, status_code=status.HTTP_303_SEE_OTHER)
-        #return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Fehler: {e}')
-    user_id = token_data.id
+        return templates.TemplateResponse('alert_invalid_credentials.html', context={'request': request})
+        # redirect_url = request.url_for('home')
+        # response = templates.TemplateResponse('index_home.html', context={'request': request, 'confirmed_password': False})
+        # response.headers['HX-Redirect'] = str(redirect_url)
+        # return response
 
+    user_id = token_data.id
     formdata = await request.form()
-    print(dict(formdata))
 
     plan_periods = services.AvailDay.available_days_to_db(dict(formdata), user_id)
 
     user = services.Person.get_user_by_id(user_id)
-    name_project = user.project.name
-    plan_per_et_filled_in = services.PlanPeriod.get_open_plan_periods(user_id)
 
     await send_confirmed_avail_days(user.id)
 
-    return templates.TemplateResponse('post_success.html', context={'request': request})
+    return templates.TemplateResponse('alert_post_success.html', context={'request': request})
 
 
 @router.get('/new_passwort')
