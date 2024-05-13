@@ -1,7 +1,6 @@
 from fastapi import HTTPException, status, APIRouter, Request, Depends, Form
 from fastapi.templating import Jinja2Templates
 from pydantic import EmailStr
-from starlette.datastructures import URL
 from starlette.responses import RedirectResponse
 
 from databases import services

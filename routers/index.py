@@ -74,8 +74,8 @@ def account_settings(request: Request, confirmed_password: bool = True):
     try:
         token_data = get_current_user_cookie(request, 'hcc_plan_auth', AuthorizationTypes.actor)
     except Exception as e:
-        return templates.TemplateResponse('index.html',
-                                          context={'request': request, 'InvalidCredentials': False, 'logged_out': True})
+        return templates.TemplateResponse('index.html', context={'request': request,
+                                                                 'InvalidCredentials': False, 'logged_out': False})
     user_id = token_data.id
     user = services.Person.get_user_by_id(user_id)
     name_project = user.project.name
