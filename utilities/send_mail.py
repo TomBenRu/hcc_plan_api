@@ -39,7 +39,8 @@ def send_new_password(person: schemas.Person, project: str, new_psw: str):
 
 
 async def send_confirmed_avail_days(person_id: UUID):
-    """sendet alle verfügbaren Tage der nicht geschlossenen Planperioden der betreffenden Person per E-Mail"""
+    """sendet alle zur Verfügung gestellten Tage der nicht geschlossenen Planperioden
+    der betreffenden Person per E-Mail"""
     person = services.Person.get_user_by_id(person_id)
     plan_periods_et_filled_in = services.PlanPeriod.get_open_plan_periods(person_id)
     text_avail_days = ''
@@ -60,11 +61,11 @@ async def send_confirmed_avail_days(person_id: UUID):
     msg = EmailMessage()
     msg['From'] = SEND_ADDRESS
     msg['To'] = send_to
-    msg['Subject'] = 'HHH-Planung - verfügbare Tage'
+    msg['Subject'] = 'HHH-Planung - deine Spieloptionen'
     msg.set_content(
         f'Hallo {person.f_name} {person.l_name},\n\n'
         f'deine Spieloptionen wurden von https://hcc-plan-api.onrender.com/ erfolgreich übertragen.\n\n'
-        f'Das sind deine soeben übertragenen verfügbare Tage:\n\n'
+        f'Das sind deine soeben übertragenen Tage, an denen du Visiten übernehmen kannst:\n\n'
         f'Abkürzungen: g = ganztags, v = vormittags, n = nachmittags\n\n'
         f'{text_avail_days}\n'
         f'Du kannst deine Spieloptionen jederzeit bis zur beim jeweiligen Planungszeitraum angegebenen Deadline '
