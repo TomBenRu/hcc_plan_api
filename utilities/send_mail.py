@@ -60,7 +60,7 @@ async def send_confirmed_avail_days(person_id: UUID):
     msg = EmailMessage()
     msg['From'] = SEND_ADDRESS
     msg['To'] = send_to
-    msg['Subject'] = 'hcc - verfügbare Tage'
+    msg['Subject'] = 'HHH-Planung - verfügbare Tage'
     msg.set_content(
         f'Hallo {person.f_name} {person.l_name},\n\n'
         f'deine Spieloptionen wurden von https://hcc-plan-api.onrender.com/ erfolgreich übertragen.\n\n'

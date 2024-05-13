@@ -22,7 +22,6 @@ def actor_plan_periods(request: Request):
     except Exception as e:
         redirect_url = request.url_for('home')
         return RedirectResponse(redirect_url, status_code=status.HTTP_303_SEE_OTHER)
-        # return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Fehler: {e}')
     user_id = token_data.id
 
     user = services.Person.get_user_by_id(user_id)
