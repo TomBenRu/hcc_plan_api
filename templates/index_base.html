@@ -185,6 +185,11 @@
         <p class="text-3xl">Deine Zugangsdaten wurden geändert. Um fortzufahren musst du dich erneut einloggen.</p>
     {% endif %}
     <p class="text-3xl">Zum Fortfahren bitte einloggen.</p>
+    <noscript>
+      <div style="background-color: yellow; text-align: center; padding: 10px;">
+          <strong>Achtung:</strong> Um diese Anwendung vollständig nutzen zu können, muss JavaScript in Ihrem Browser aktiviert sein.
+      </div>
+    </noscript>
     <button class="w3-button w3-black w3-padding-large w3-large w3-margin-top" onclick="document.getElementById('login01').style.display='block'">Login</button>
   {% endblock %}
 </header>
