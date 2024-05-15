@@ -72,7 +72,7 @@ async def send_confirmed_avail_days(person_id: UUID):
         f'ändern oder ergänzen.\n\n'
         f'Viele Grüsse\n'
         f'{person.team_of_actor.dispatcher.f_name} {person.team_of_actor.dispatcher.l_name}\n'
-        f'Team hcc-dispo\n\n'
+        f'(Spielplanung {person.project.name})\n\n'
         f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---'
     )
 
@@ -92,7 +92,7 @@ def send_remainder_confirmation(planperiod: schemas.PlanPeriod, persons: list[sc
         f'es wurden Remainder verschickt.\n'
         f'Planungszeitraum: {planperiod.start.strftime("%d.%m.%y")} - {planperiod.end.strftime("%d.%m.%y")}\n'
         f'Empfänger: {text_empfaenger}\n\n'
-        f'Team hcc-dispo \n\n'
+        f'Team hcc-dispo\n\n'
         f'--- Diese Email wurde automatisch generiert. Bitte nicht antworten. ---'
     )
 
