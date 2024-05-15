@@ -21,9 +21,9 @@ class CustomError(Exception):
 class Person:
     @staticmethod
     @db_session
-    def get_user_by_id(user_id: UUID) -> schemas.Person:
+    def get_user_by_id(user_id: UUID) -> schemas.PersonShow:
         person = models.Person[user_id]
-        return schemas.Person.model_validate(person)
+        return schemas.PersonShow.model_validate(person)
 
     @staticmethod
     @db_session
