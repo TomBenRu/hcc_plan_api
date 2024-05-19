@@ -1,10 +1,10 @@
 import pickle
 from datetime import date, datetime, timedelta
-from typing import Optional, Set, Any, List, Union
+from typing import Optional, Any, List, Union
 from uuid import UUID
 
 import apscheduler.job
-from pydantic import BaseModel, Field, EmailStr, conint, field_validator, ConfigDict
+from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
 from .enums import TimeOfDay
 
 

@@ -1069,7 +1069,7 @@ class DeletePerson(CommonTopLevel):
 class ChangePlanPeriod(CommonTopLevel):
     def __init__(self, parent, access_token: str):
         super().__init__(parent)
-        self.bind('<Return>', lambda event: self.change())
+        # self.bind('<Return>', lambda event: self.change())
 
         self.access_token = access_token
 
@@ -1573,11 +1573,14 @@ class MainMenu(tk.Menu):
         self.dispatcher.add_command(label='Alle Clowns...', command=parent.get_all_actors)
 
 
-if __name__ == '__main__':
+def main():
     root = tk.Tk()
     root.title('Datenbankverwaltung')
     root.geometry('800x600+00+00')
     mainframe = MainFrame(root)
     mainframe.pack()
-    root.menubar = MainMenu(parent=mainframe, root=root)
     root.mainloop()
+
+
+if __name__ == '__main__':
+    main()
