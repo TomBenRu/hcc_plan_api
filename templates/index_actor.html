@@ -6,7 +6,7 @@
 {% endblock %}
 {% block menu_bar_items %}
     <div class="w3-dropdown-hover w3-hide-small">
-        <button class="w3-button" title="Notifications">Sperrtemine <i class="fa fa-caret-down"></i></button>
+        <button class="w3-button">Sperrtemine <i class="fa fa-caret-down"></i></button>
         <div class="w3-dropdown-content w3-card-4 w3-bar-block">
             {% for planung_filled_in in plan_periods  %}
                 {% set filled_in = planung_filled_in.filled_in %}
