@@ -83,7 +83,7 @@
                                 {% else %}
                                     {% set cl = "drop_x" %}
                                 {% endif %}
-                                <select class="{{cl}}" name="{{d}}_{{plan_period.id}}" id="{{select_id}}" style="font: 1.0em Helvetica, sans-serif" onchange="select_change({{select_id}})">
+                                <select class="{{cl}} hover:ring-2" name="{{d}}_{{plan_period.id}}" id="{{select_id}}" style="font: 1.0em Helvetica, sans-serif" onchange="select_change({{select_id}})">
                                     {% for val, name in (('x', 'gesperrt'), ('v', 'vorm.'), ('n', 'nachm.'), ('g', 'ganzt.')) %}
                                         {% if d in avail_days and avail_days[d] == val %}
                                             <option value="{{val}}" selected>{{name}}</option>
