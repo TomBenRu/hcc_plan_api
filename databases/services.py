@@ -89,7 +89,7 @@ class Person:
     @staticmethod
     @db_session
     def find_user_by_email(email: str) -> schemas.PersonShow | None:
-        person = models.Person.get(lambda p: p.email == email)
+        person = models.Person.get(lambda p: p.email.lower() == email.lower())
         if person:
             return schemas.PersonShow.model_validate(person)
         return None
