@@ -43,7 +43,3 @@ def start_db():
     if not server_remote_access:
         for db, file in ((models.db_actors, settings.settings.db_actors), ):
             generate_db_mappings(db=db, file=file)
-
-
-if __name__ == '__main__':
-    pass

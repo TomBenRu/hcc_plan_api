@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 import uvicorn
 
 from fastapi import FastAPI
@@ -8,15 +10,7 @@ from routers import auth, actors, supervisor, admin, dispatcher, index
 from utilities.scheduler import scheduler
 from databases import schemas
 
-app = FastAPI()
 
-app.mount('/static', StaticFiles(directory='static'), name='static')
-
-
-database.start_db()
-
-
-@app.on_event('startup')
 def scheduler_startup():
     scheduler.start()
     print('scheduler started')
@@ -25,6 +19,18 @@ def scheduler_startup():
     for job in jobs:
         scheduler.add_job(**job.job.__getstate__())
         print(f'geladene Jobs: {[j.__getstate__() for j in scheduler.get_jobs()]}')
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    database.start_db()
+    scheduler_startup()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+app.mount('/static', StaticFiles(directory='static'), name='static')
 
 
 app.include_router(index.router)

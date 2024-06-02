@@ -1579,6 +1579,7 @@ def main():
     root.geometry('800x600+00+00')
     mainframe = MainFrame(root)
     mainframe.pack()
+    root.menubar = MainMenu(parent=mainframe, root=root)
     root.mainloop()
 
 
