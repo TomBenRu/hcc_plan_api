@@ -35,5 +35,5 @@ async def user_login_from_clown_control(form_data: OAuth2PasswordRequestForm = D
     auth_types = get_authorization_types(user)
     if AuthorizationTypes.actor not in auth_types:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='You are not authorized')
-    return {'f_name': user.f_name, 'l_name': user.l_name, 'artost_name': user.artist_name, 'team_of_actor': user.team_of_actor.name,
-            'institution_actors': user.project.name}
+    return {'f_name': user.f_name, 'l_name': user.l_name, 'artist_name': user.artist_name,
+            'team_of_actor': user.team_of_actor.name, 'institution_actors': user.project.name}
