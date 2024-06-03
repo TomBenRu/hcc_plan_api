@@ -29,6 +29,7 @@ class PersonCreate(BaseModel):
 
     f_name: str
     l_name: str
+    artist_name: Optional[str] = None
     email: EmailStr
     username: str
     password: Optional[str] = None

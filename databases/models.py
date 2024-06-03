@@ -34,6 +34,7 @@ class Person(db_actors.Entity):
     id = PrimaryKey(UUID, auto=True)
     f_name = Required(str, 50)
     l_name = Required(str, 50)
+    artist_name = Optional(str, 50)
     email = Required(str, 50, unique=True)
     username = Required(str, 50, unique=True)
     password = Required(str)
