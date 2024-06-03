@@ -679,15 +679,19 @@ class CreatePerson(CommonTopLevel):
         self.lb_lname.grid(row=1, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
         self.entry_lname = tk.Entry(self.frame_input, width=50)
         self.entry_lname.grid(row=1, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
+        self.lb_artist_name = tk.Label(self.frame_input, text='Künstlername:')
+        self.entry_artist_name = tk.Entry(self.frame_input, width=50)
+        self.lb_artist_name.grid(row=2, column=0, sticky='w', padx=(5, 0), pady=(5, 5))
+        self.entry_artist_name.grid(row=2, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
         self.lb_email = tk.Label(self.frame_input, text='Email:')
-        self.lb_email.grid(row=2, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.lb_email.grid(row=3, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
         self.entry_email = tk.Entry(self.frame_input, width=50)
-        self.entry_email.grid(row=2, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
+        self.entry_email.grid(row=3, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
         self.lb_password = tk.Label(self.frame_input, text='Passwort')
-        self.lb_password.grid(row=3, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.lb_password.grid(row=4, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
         self.entry_password = PlaceholderEntry(self.frame_input, width=50, show='*',
                                             placeholder='Wenn leer: Random Passwort wird erzeugt.')
-        self.entry_password.grid(row=3, column=1, sticky='w', padx=(5, 0), pady=(5, 0))
+        self.entry_password.grid(row=4, column=1, sticky='w', padx=(5, 0), pady=(5, 0))
 
         self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=20, command=self.new_person)
         self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 10))
@@ -695,9 +699,12 @@ class CreatePerson(CommonTopLevel):
         self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(10, 0))
 
     def new_person(self):
-        person = schemas.PersonCreate(f_name=self.entry_fname.get(), l_name=self.entry_lname.get(),
-                                 email=EmailStr(self.entry_email.get()), username=EmailStr(self.entry_email.get()),
-                                 password=self.entry_password.get())
+        person = schemas.PersonCreate(f_name=self.entry_fname.get(),
+                                      l_name=self.entry_lname.get(),
+                                      artist_name=self.entry_artist_name.get(),
+                                      email=EmailStr(self.entry_email.get()),
+                                      username=self.entry_email.get(),
+                                      password=self.entry_password.get())
         response = requests.post(f'{self.parent.host}/admin/person',
                                  json=person.model_dump(),
                                  headers={'Authorization': f'Bearer {self.access_token}'})
@@ -726,10 +733,14 @@ class ChangePersonNames(CommonTopLevel):
         self.entry_f_name = tk.Entry(self.frame_input)
         self.lb_l_name = tk.Label(self.frame_input, text='Nachname:')
         self.entry_l_name = tk.Entry(self.frame_input)
+        self.lb_artist_name = tk.Label(self.frame_input, text='Künstlername:')
+        self.entry_artist_name = tk.Entry(self.frame_input)
         self.lb_f_name.grid(row=0, column=0)
         self.entry_f_name.grid(row=0, column=1)
         self.lb_l_name.grid(row=1, column=0)
         self.entry_l_name.grid(row=1, column=1)
+        self.lb_artist_name.grid(row=2, column=0)
+        self.entry_artist_name.grid(row=2, column=1)
 
         self.bt_ok = tk.Button(self.frame_buttons, text='Ändern', width=15, command=self.update_to_db)
         self.bt_cancel = tk.Button(self.frame_buttons, text='Abbruch', width=15, command=self.destroy)
@@ -751,8 +762,10 @@ class ChangePersonNames(CommonTopLevel):
         person = self.all_persons__dict_name_person_show[self.combo_persons.get()]
         self.entry_f_name.delete(0, 'end')
         self.entry_l_name.delete(0, 'end')
+        self.entry_artist_name.delete(0, 'end')
         self.entry_f_name.insert(0, person.f_name)
         self.entry_l_name.insert(0, person.l_name)
+        self.entry_artist_name.insert(0, person.artist_name)
 
     def update_to_db(self):
 
@@ -761,6 +774,7 @@ class ChangePersonNames(CommonTopLevel):
             return
         person.f_name = self.entry_f_name.get()
         person.l_name = self.entry_l_name.get()
+        person.artist_name = self.entry_artist_name.get()
         person_json = json.loads(person.json())
 
         response = requests.put(f'{self.parent.host}/admin/person', json=person_json,
