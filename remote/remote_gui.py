@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 import threading
 import tkinter as tk
 import tkinter.messagebox
@@ -67,7 +68,7 @@ class MainFrame(ttk.Frame):
     def get_host(self):
         while not self.host:
             try:
-                with open('settings_data.json', 'r') as f:
+                with open(os.path.join(os.path.dirname(__file__), 'settings_data.json'), 'r') as f:
                     settings_data = json.load(f)
                     self.host = settings_data['host']
             except Exception as e:
@@ -379,7 +380,7 @@ class Settings(tk.Toplevel):
 
     def autofill(self):
         try:
-            with open('settings_data.json', 'r') as f:
+            with open(os.path.join(os.path.dirname(__file__), 'settings_data.json'), 'r') as f:
                 settings_data = json.load(f)
         except Exception as e:
             print(e)
@@ -389,7 +390,7 @@ class Settings(tk.Toplevel):
 
     def save_settings(self):
         if self.var_chk_save_settings_data.get():
-            with open('settings_data.json', 'w') as f:
+            with open(os.path.join(os.path.dirname(__file__), 'settings_data.json'), 'w') as f:
                 json.dump({'host': self.entry_host.get()}, f)
         self.parent.host = self.entry_host.get()
         tk.messagebox.showinfo(parent=self, message='Die Einstellungen wurden vorgenommen.')
@@ -464,7 +465,7 @@ class Login(CommonTopLevel):
                                message=f'Eingelogged als:\n'
                                        f'- {", ".join(payload["roles"])}')
         if self.var_chk_save_access_data.get():
-            with open('access_data.json', 'w') as f:
+            with open(os.path.join(os.path.dirname(__file__), 'access_data.json'), 'w') as f:
                 if not (person := self.var_combo_persons.get()):
                     tk.messagebox.showerror(parent=self, message='Sie müssen zuerst ihren Namen eintragen.')
                 self.access_data[person] = {}
@@ -475,7 +476,7 @@ class Login(CommonTopLevel):
 
     def get_login_persons(self):
         try:
-            with open('access_data.json', 'r') as f:
+            with open(os.path.join(os.path.dirname(__file__), 'access_data.json'), 'r') as f:
                 self.access_data = json.load(f)
         except Exception as e:
             print(e)
@@ -541,7 +542,7 @@ class CreateNewProject(CommonTopLevel):
 
     def new_project(self):
         person = schemas.PersonCreate(f_name=self.entry_fname_admin.get(), l_name=self.entry_lname_admin.get(),
-                                 email=EmailStr(self.entry_email_admin.get()), password=self.entry_password_admin.get(),
+                                 email=self.entry_email_admin.get(), password=self.entry_password_admin.get(),
                                  username=self.entry_username_admin.get())
         project = schemas.ProjectCreate(name=self.entry_projectname.get(), active=self.var_chk_active.get())
 
@@ -702,7 +703,7 @@ class CreatePerson(CommonTopLevel):
         person = schemas.PersonCreate(f_name=self.entry_fname.get(),
                                       l_name=self.entry_lname.get(),
                                       artist_name=self.entry_artist_name.get(),
-                                      email=EmailStr(self.entry_email.get()),
+                                      email=self.entry_email.get(),
                                       username=self.entry_email.get(),
                                       password=self.entry_password.get())
         response = requests.post(f'{self.parent.host}/admin/person',

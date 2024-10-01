@@ -119,11 +119,13 @@
     {{ super() }}
     function select_change(e_id) {
         var elem = document.getElementById(e_id);
+        elem.classList.remove('drop_x', 'drop_v', 'drop_n', 'drop_g');
         var val_elem = elem.value;
-        elem.className = 'drop_' + val_elem;
+        elem.classList.add('drop_' + val_elem);
+<!--        elem.className = 'drop_' + val_elem;-->
     }
 
-    function submit_form() {
-        document.getElementById("form1").submit();
-    }
+<!--    function submit_form() {-->
+<!--        document.getElementById("form1").submit();-->
+<!--    }-->
 {% endblock %}

@@ -10,7 +10,7 @@ from oauth2_authentication import verify_access_token, oauth2_scheme
 router = APIRouter(prefix='/admin', tags=['Admin'])
 
 
-@router.get('/persons')
+@router.get('/persons', response_model=list[schemas.PersonShow])
 async def get_persons(access_token: str = Depends(oauth2_scheme)):
     try:
         token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
@@ -24,7 +24,7 @@ async def get_persons(access_token: str = Depends(oauth2_scheme)):
     return persons
 
 
-@router.get('/teams')
+@router.get('/teams', response_model=list[schemas.Team])
 async def get_teams(access_token: str = Depends(oauth2_scheme)):
     try:
         token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
@@ -38,7 +38,7 @@ async def get_teams(access_token: str = Depends(oauth2_scheme)):
     return teams
 
 
-@router.get('/project')
+@router.get('/project', response_model=schemas.Project)
 async def get_project(access_token: str = Depends(oauth2_scheme)):
     try:
         token_data = verify_access_token(access_token, role=AuthorizationTypes.admin)
@@ -75,7 +75,9 @@ async def add_new_person(person: schemas.PersonCreate, access_token: str = Depen
     try:
         new_person = services.Person.create_person(user_id, person)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Error: {e}')
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=f'Error: {e}'
+        ) from e
     return new_person
 
 

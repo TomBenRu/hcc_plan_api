@@ -140,7 +140,7 @@ async def get_teams(access_token: str = Depends(oauth2_scheme)):
     return teams
 
 
-@router.get('/planperiods')
+@router.get('/planperiods', response_model=list[schemas.PlanPeriod])
 def get_planperiods(team_id: str, access_token: str = Depends(oauth2_scheme)):
     try:
         token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
