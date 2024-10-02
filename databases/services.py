@@ -237,7 +237,16 @@ class AvailDay:
 
     @staticmethod
     @db_session
-    def get_avail_days__from_actor_planperiod(person_id, planperiod_id) -> list[schemas.AvailDayShow]:
+    def get_avail_days_from_plan_period_and_person(
+            plan_period_id: UUID, person_id: UUID) -> list[schemas.AvailDay]:
+        avail_days_db = (models.AvailDay.select()
+                         .filter(lambda avd: avd.availables.plan_period.id == plan_period_id)
+                         .filter(lambda avd: avd.availables.person.id == person_id))
+        return [schemas.AvailDay.model_validate(avd) for avd in avail_days_db]
+
+    @staticmethod
+    @db_session
+    def get_avail_days__from_actor_planperiod(person_id: UUID, planperiod_id: UUID) -> list[schemas.AvailDayShow]:
         person = models.Person.get_for_update(id=person_id)
         availables = models.Availables.get_for_update(
             lambda av: av.person.id == person_id and av.plan_period.id == planperiod_id)

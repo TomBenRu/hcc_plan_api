@@ -135,7 +135,8 @@ def send_avail_days_to_actors(plan_period_id: str):
     time_of_day_explicit = {'v': 'Vormittag', 'n': 'Nachmittag', 'g': 'Ganztag'}
     persons_with_availables: list[tuple[schemas.PersonShow, list[schemas.AvailDayShow]]] = []
     for person in persons:
-        avail_days_from_service = services.AvailDay.get_avail_days__from_actor_planperiod(person.id, UUID(plan_period_id))
+        avail_days_from_service = services.AvailDay.get_avail_days__from_actor_planperiod(person.id,
+                                                                                          UUID(plan_period_id))
         if avail_days_from_service is None:
             continue
         avail_days = sorted(avail_days_from_service, key=lambda x: x.day)

@@ -712,8 +712,10 @@ class CreatePerson(CommonTopLevel):
                                       email=self.entry_email.get(),
                                       username=self.entry_email.get(),
                                       password=self.entry_password.get())
+        print(person.model_dump(mode='json'))
+
         response = requests.post(f'{self.parent.host}/admin/person',
-                                 json=person.model_dump(),
+                                 json=person.model_dump(mode='json'),
                                  headers={'Authorization': f'Bearer {self.access_token}'})
         self.parent.new_person_data = response.json()
         self.destroy()

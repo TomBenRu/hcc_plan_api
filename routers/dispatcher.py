@@ -176,6 +176,18 @@ def get_avail_days(planperiod_id: str, access_token: str = Depends(oauth2_scheme
     return avail_days
 
 
+@router.get('/avail-days-from-plan-period-and-person')
+def avail_days_from_plan_period_and_person(plan_period_id: str, person_id: str,
+                                           access_token: str = Depends(oauth2_scheme)):
+    try:
+        token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
+    except Exception as e:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong credentials - {e}')
+    return services.AvailDay.get_avail_days_from_plan_period_and_person(
+        UUID(person_id), UUID(plan_period_id)
+    )
+
+
 # nur fürs Testen:
 @router.get('/not-feedbacked')
 def not_feedbacked_availables(planperiod_id: str, access_token: str = Depends(oauth2_scheme)):
