@@ -35,9 +35,15 @@ class Person:
         project = models.Person[admin_id].project
         person.project = project
         person.password = hashed_psw
-        new_person = models.Person(f_name=person.f_name, l_name=person.l_name, artist_name=person.artist_name,
-                                   email=person.email, username=person.username, password=person.password,
-                                   project=project)
+        if person.id:
+            new_person = models.Person(id=person.id, f_name=person.f_name, l_name=person.l_name,
+                                       artist_name=person.artist_name, email=person.email, username=person.username,
+                                       password=person.password, project=project)
+        else:
+            new_person = models.Person(f_name=person.f_name, l_name=person.l_name,
+                                       artist_name=person.artist_name, email=person.email, username=person.username,
+                                       password=person.password, project=project)
+
         return {'person': schemas.PersonShow.model_validate(new_person), 'password': password}
 
     @staticmethod

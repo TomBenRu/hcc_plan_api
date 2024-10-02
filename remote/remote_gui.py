@@ -6,6 +6,7 @@ import tkinter as tk
 import tkinter.messagebox
 import tkinter.ttk as ttk
 from typing import Literal, Optional
+from uuid import UUID
 
 import requests
 import tkcalendar
@@ -691,8 +692,12 @@ class CreatePerson(CommonTopLevel):
         self.lb_password = tk.Label(self.frame_input, text='Passwort')
         self.lb_password.grid(row=4, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
         self.entry_password = PlaceholderEntry(self.frame_input, width=50, show='*',
-                                            placeholder='Wenn leer: Random Passwort wird erzeugt.')
+                                               placeholder='Wenn leer: Random Passwort wird erzeugt.')
         self.entry_password.grid(row=4, column=1, sticky='w', padx=(5, 0), pady=(5, 0))
+        self.lb_password = tk.Label(self.frame_input, text='Person-ID')
+        self.lb_password.grid(row=5, column=0, sticky='e', padx=(0, 5), pady=(5, 5))
+        self.entry_id = PlaceholderEntry(self.frame_input, width=50, placeholder='Optional: Eine gültige UUID')
+        self.entry_id.grid(row=5, column=1, sticky='w', padx=(5, 0), pady=(5, 5))
 
         self.bt_ok = tk.Button(self.frame_buttons, text='okay', width=20, command=self.new_person)
         self.bt_ok.grid(row=0, column=0, sticky='e', padx=(0, 10))
@@ -700,7 +705,8 @@ class CreatePerson(CommonTopLevel):
         self.bt_cancel.grid(row=0, column=1, sticky='w', padx=(10, 0))
 
     def new_person(self):
-        person = schemas.PersonCreate(f_name=self.entry_fname.get(),
+        person = schemas.PersonCreate(id=UUID(self.entry_id.get()) if self.entry_id.get() else None,
+                                      f_name=self.entry_fname.get(),
                                       l_name=self.entry_lname.get(),
                                       artist_name=self.entry_artist_name.get(),
                                       email=self.entry_email.get(),
