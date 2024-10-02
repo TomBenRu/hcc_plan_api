@@ -22,8 +22,8 @@ class Person:
     @staticmethod
     @db_session
     def get_user_by_id(user_id: UUID) -> schemas.PersonShow:
-        person = models.Person[user_id]
-        return schemas.PersonShow.model_validate(person)
+        person = models.Person.get(id=user_id)
+        return schemas.PersonShow.model_validate(person) if person else None
 
     @staticmethod
     @db_session
@@ -237,12 +237,11 @@ class AvailDay:
 
     @staticmethod
     @db_session
-    def get_avail_days_from_plan_period_and_person(
-            plan_period_id: UUID, person_id: UUID) -> list[schemas.AvailDay]:
-        avail_days_db = (models.AvailDay.select()
-                         .filter(lambda avd: avd.availables.plan_period.id == plan_period_id)
-                         .filter(lambda avd: avd.availables.person.id == person_id))
-        return [schemas.AvailDay.model_validate(avd) for avd in avail_days_db]
+    def get_avail_days_from_plan_period_and_person(person_id: UUID, plan_period_id: UUID) -> list[schemas.AvailDay]:
+        availables_db = (models.Availables.select()
+                         .filter(lambda a: a.plan_period.id == plan_period_id)
+                         .filter(lambda a: a.person.id == person_id)).first()
+        return [schemas.AvailDay.model_validate(avd) for avd in availables_db.avail_days]
 
     @staticmethod
     @db_session

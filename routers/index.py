@@ -25,6 +25,8 @@ def home(request: Request):
     user_id = token_data.id
 
     user = services.Person.get_user_by_id(user_id)
+    if user is None:
+        return templates.TemplateResponse('index.html', context={'request': request, 'InvalidCredentials': False})
     name_project = user.project.name
     response = templates.TemplateResponse('index_home.html',
                                           context={'request': request, 'name_project': name_project,
