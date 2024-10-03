@@ -307,10 +307,10 @@ class PlanPeriod:
 
     @staticmethod
     @db_session
-    def create_new_plan_period(team_id: str, date_start: datetime.date | None, date_end: datetime.date,
-                               deadline: datetime.date, notes: str):
+    def create_new_plan_period(team_id: UUID, date_start: datetime.date | None, date_end: datetime.date,
+                               deadline: datetime.date, notes: str, plan_period_id: UUID | None):
         max_date: datetime.date | None = None
-        if planperiods := models.PlanPeriod.select(lambda pp: pp.team.id == UUID(team_id)):
+        if planperiods := models.PlanPeriod.select(lambda pp: pp.team.id == team_id):
             max_date: datetime.date = max(pp.end for pp in planperiods)
         if not date_start:
             if not max_date:
@@ -322,9 +322,12 @@ class PlanPeriod:
             raise ValueError('Das Startdatum befindet sich in der letzten Planungsperiode.')
         if date_end < date_start:
             raise ValueError('Das Enddatum darf nicht vor dem Startdatum liegen.')
-
-        plan_period = models.PlanPeriod(start=date_start, end=date_end, deadline=deadline, notes=notes,
-                                        team=models.Team.get(lambda t: t.id == UUID(team_id)))
+        if plan_period_id:
+            plan_period = models.PlanPeriod(id=plan_period_id, start=date_start, end=date_end, deadline=deadline,
+                                            notes=notes, team=models.Team.get(lambda t: t.id == team_id))
+        else:
+            plan_period = models.PlanPeriod(start=date_start, end=date_end, deadline=deadline, notes=notes,
+                                            team=models.Team.get(lambda t: t.id == team_id))
         return schemas.PlanPeriod.model_validate(plan_period)
 
     @staticmethod

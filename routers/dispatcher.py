@@ -26,7 +26,7 @@ def get_project(access_token: str = Depends(oauth2_scheme)):
 
 @router.post('/planperiod')
 async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline: str, remainder: bool, notes: str = '',
-                         access_token: str = Depends(oauth2_scheme)):
+                         plan_period_id: str = '', access_token: str = Depends(oauth2_scheme)):
     try:
         token_data = verify_access_token(access_token, role=AuthorizationTypes.dispatcher)
     except Exception as e:
@@ -40,7 +40,9 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
     date_end = datetime.date(*[int(v) for v in date_end.split('-')])
     deadline = datetime.date(*[int(v) for v in deadline.split('-')])
     try:
-        new_plan_period = services.PlanPeriod.create_new_plan_period(team_id, date_start, date_end, deadline, notes)
+        new_plan_period = services.PlanPeriod.create_new_plan_period(
+            UUID(team_id), date_start, date_end, deadline,
+            notes, UUID(plan_period_id) if plan_period_id else None)
     except ValueError as e:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Fehler: {e}')
     if remainder:
