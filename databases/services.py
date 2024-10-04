@@ -241,7 +241,7 @@ class AvailDay:
         availables_db = (models.Availables.select()
                          .filter(lambda a: a.plan_period.id == plan_period_id)
                          .filter(lambda a: a.person.id == person_id)).first()
-        return [schemas.AvailDay.model_validate(avd) for avd in availables_db.avail_days]
+        return [schemas.AvailDay.model_validate(avd) for avd in availables_db.avail_days] if availables_db else []
 
     @staticmethod
     @db_session
