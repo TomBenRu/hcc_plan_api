@@ -32,6 +32,14 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
     except Exception as e:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'wrong cedentials - {e}')
     dispatcher_id = token_data.id
+    print(f'{date_start=}\n'
+          f'{date_end=}\n'
+          f'{deadline=}\n'
+          f'{remainder=}\n'
+          f'{notes=}\n'
+          f'{plan_period_id=}\n'
+          f'{dispatcher_id=}\n'
+          f'{team_id=}', flush=True)
 
     if not date_start:
         date_start = None
