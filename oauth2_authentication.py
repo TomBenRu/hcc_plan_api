@@ -30,12 +30,12 @@ def create_access_token(data: dict) -> str:
     return encoded_jwt
 
 
-def verify_access_token(token: str, role: AuthorizationTypes) -> schemas.TokenData:
+def verify_access_token(token: str, role: AuthorizationTypes=None) -> schemas.TokenData:
     try:
         payload = jwt.decode(token=token, key=SECRET_KEY, algorithms=ALGORITHM)
         if not (u_id := payload.get('user_id')):
             raise credentials_exception
-        if role.value not in payload['roles']:
+        if role and role.value not in payload['roles']:
             raise credentials_exception
         token_data = schemas.TokenData(id=u_id, authorizations=payload['roles'])
     except JWTError:
@@ -43,7 +43,7 @@ def verify_access_token(token: str, role: AuthorizationTypes) -> schemas.TokenDa
     return token_data
 
 
-def get_current_user_cookie(request: Request, token_key: str, role: AuthorizationTypes):
+def get_current_user_cookie(request: Request, token_key: str, role: AuthorizationTypes | None):
     token: str | None = request.cookies.get(token_key)
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='you have to log in first')
@@ -52,7 +52,7 @@ def get_current_user_cookie(request: Request, token_key: str, role: Authorizatio
 
 
 def get_authorization_types(user: schemas.PersonShow) -> list[AuthorizationTypes]:
-    auth_types = []
+    auth_types = [AuthorizationTypes.google_calendar]
     if user.team_of_actor:
         auth_types.append(AuthorizationTypes.actor)
     if user.project_of_admin:
@@ -70,6 +70,7 @@ def authenticate_user(username: str, passwort: str) -> schemas.PersonShow | str:
         raise credentials_exception
     if not utils.verify(passwort, user.password):
         raise credentials_exception
+    print(f'{user=}', flush=True)
     return user
 
 

@@ -7,7 +7,7 @@ class EnumConverter(StrConverter):
 
     def validate(self, val, obj=None):
         if not isinstance(val, Enum):
-            raise ValueError('Must be an Enum.  Got {}'.format(type(val)))
+            raise ValueError(f'Must be an Enum.  Got {type(val)}')
         return val
 
     def py2sql(self, val):

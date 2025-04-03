@@ -1,0 +1,66 @@
+<!-- Notizen und Mitteilungen -->
+<div class="fixed right-2 sm:right-4 top-20 max-h-[calc(100vh-5rem)] overflow-y-auto
+            w-32 xs:w-36 sm:w-48 md:w-56 lg:w-64 xl:w-72
+            backdrop-blur-sm rounded-lg border border-slate-700/50 
+            shadow-lg z-50 transition-all duration-300 {{ color }}"
+     x-data="{ 
+        isOpen: localStorage.getItem('notesOpen') === null ? true : localStorage.getItem('notesOpen') === 'true',
+        toggleOpen() {
+            this.isOpen = !this.isOpen;
+            localStorage.setItem('notesOpen', this.isOpen);
+        }
+     }">
+    
+    <!-- Header mit Toggle -->
+    <div class="p-1.5 sm:p-2 flex justify-between items-center cursor-pointer" @click="toggleOpen()">
+        <div class="font-bold text-slate-300">
+            <span class="text-[10px] xs:text-xs sm:text-sm md:text-base">Anmerkungen</span><br>
+            <span class="text-[10px] xs:text-xs sm:text-sm md:text-base">{{ period }}</span>
+        </div>
+        <button class="text-slate-400 hover:text-slate-300 transition-transform duration-300" :class="{ 'rotate-180': !isOpen }">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 xs:h-3 xs:w-3 sm:h-4 sm:w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Expandierbarer Inhalt -->
+    <div x-show="isOpen" 
+         class="p-2 sm:p-3 md:p-4 pt-0 transition-all duration-300 origin-top space-y-0.5 xs:space-y-1 sm:space-y-1.5 md:space-y-2 lg:space-y-4 xl:space-y-3"
+         x-transition>
+        
+        <!-- Deadline -->
+        {% if deadline %}
+        <div>
+            <h3 class="text-base xs:text-xs sm:text-sm md:text-base font-semibold text-slate-300 mb-0.5 sm:mb-1">Deadline</h3>
+            <p class="text-base xs:text-xs sm:text-sm md:text-base text-slate-400">{{ deadline.strftime('%d.%m.%Y') }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Mitteilung -->
+        {% if message %}
+        <div>
+            <h3 class="text-base xs:text-xs sm:text-sm md:text-base font-semibold text-slate-300 mb-0.5 sm:mb-1">Mitteilung</h3>
+            <p class="text-base xs:text-xs sm:text-sm md:text-base text-slate-400 whitespace-pre-line">{{ message }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Notizen -->
+        <div>
+            <h3 class="text-base xs:text-xs sm:text-sm md:text-base font-semibold text-slate-300 mb-0.5 sm:mb-1">Notizen</h3>
+            <div class="relative">
+                <textarea 
+                    id="notes-{{ period|replace(' ', '-')|lower }}"
+                    class="w-full text-base xs:text-xs sm:text-sm md:text-base bg-slate-800/50 text-slate-300 rounded p-1.5 sm:p-2 border border-slate-600/50 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 focus:outline-none"
+                    rows="4"
+                    placeholder="Notizen für diese Periode..."
+                    hx-post="{{ url_for('save_notes_new') }}"
+                    hx-trigger="keyup changed delay:500ms"
+                    hx-target="#notification-container"
+                    hx-swap="innerHTML"
+                    hx-vals='{"period": "{{ period }}"}'
+                    name="notes">{{ notes }}</textarea>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,9 @@
+<div id="{{ period }}-icon-{{ date.strftime('%Y-%m-%d') }}"
+     class="flex items-center gap-1 p-0 rounded-lg text-{{ curr_icon_color }} hover:bg-gray-100/50 transition-colors cursor-pointer"
+     hx-post="{{ url_for('select_time_new') }}"
+     hx-vals='{"date": "{{ date.strftime('%Y-%m-%d') }}", "period": "{{ period }}"}'
+     hx-swap="none"
+     {% if is_response|default(false) %}hx-swap-oob="true"{% endif %}>
+    {% include 'icons/' + period + '.html' %}
+    <span class="text-sm">{{ period_translation[period] }}</span>
+</div>

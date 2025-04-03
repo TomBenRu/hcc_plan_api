@@ -3,12 +3,18 @@
     {{ super() }}
 {% endblock %}
 {% block menu_bar_items %}
-    <a href="{{ url_for('actor_plan_periods') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Eingabe Spieloptionen</a>
+    <a href="{{ url_for('google_calendar') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Google Calendar</a>
+    {% if user_roles and ('actor' in user_roles or 'dispatcher' in user_roles or 'admin' in user_roles) %}
+        <a href="{{ url_for('actor_plan_periods') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Eingabe Spieloptionen</a>
+    {% endif %}
     <a href="{{ url_for('account_settings') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Einstellungen</a>
     <a href="{{ url_for('logout') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Logout</a>
 {% endblock %}
 {% block navbar_small_items %}
-    <a href="{{ url_for('actor_plan_periods') }}" class="w3-bar-item w3-button w3-padding-large">Eingabe Spieloptionen</a>
+    <a href="{{ url_for('google_calendar') }}" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white">Google Calendar</a>
+    {% if user_roles and ('actor' in user_roles or 'dispatcher' in user_roles or 'admin' in user_roles) %}
+        <a href="{{ url_for('actor_plan_periods') }}" class="w3-bar-item w3-button w3-padding-large">Eingabe Spieloptionen</a>
+    {% endif %}
     <a href="{{ url_for('account_settings') }}" class="w3-bar-item w3-button w3-padding-large">Einstellungen</a>
     <a href="{{ url_for('logout') }}" class="w3-bar-item w3-button w3-padding-large">Logout</a>
 {% endblock %}

@@ -258,6 +258,31 @@ class AvailDay:
             return
         return [schemas.AvailDayShow.model_validate(ad) for ad in availables.avail_days]
 
+    @staticmethod
+    @db_session
+    def create_avail_day(person_id: UUID, avail_day: schemas.AvailDayCreate):
+        team_db = models.Person[person_id].team_of_actor
+        plan_period_db = (models.PlanPeriod.select()
+                          .filter(lambda pp: pp.start <= avail_day.day)
+                          .filter(lambda pp: pp.end >= avail_day.day)
+                          .filter(lambda pp: pp.team == team_db).first())
+        person_db = models.Person[person_id]
+        availables_in_db = (models.Availables.get(lambda a: a.person == person_db and a.plan_period == plan_period_db)
+                            or models.Availables(plan_period=plan_period_db, person=person_db))
+        avail_day_db = models.AvailDay(
+            day=avail_day.day, time_of_day=avail_day.time_of_day, availables=availables_in_db)
+        print(avail_day_db.time_of_day)
+        return schemas.AvailDay.model_validate(avail_day_db)
+
+    @staticmethod
+    @db_session
+    def delete_avail_day(person_id: UUID, date: datetime.date, time_of_day: TimeOfDay):
+        plan_period_db = models.PlanPeriod.get(
+            lambda pp: pp.start <= date and date <= pp.end and pp.team == models.Person[person_id].team_of_actor)
+        availables_in_db = models.Availables.get(person=models.Person[person_id], plan_period=plan_period_db)
+        avail_day_in_db = models.AvailDay.get(day=date, time_of_day=time_of_day, availables=availables_in_db)
+        avail_day_in_db.delete()
+
 
 class PlanPeriod:
     @staticmethod
@@ -294,6 +319,14 @@ class PlanPeriod:
     def get_planperiods_of_team(team_id: UUID) -> list[schemas.PlanPeriod]:
         planperiods = models.Team[team_id].plan_periods
         return [schemas.PlanPeriod.model_validate(pp) for pp in planperiods]
+
+    @staticmethod
+    @db_session
+    def get_notes_and_deadline(date_start: datetime.date, date_end: datetime.date, user_id: UUID):
+        team_db = models.Person[user_id].team_of_actor
+        plan_period_db = models.PlanPeriod.select(
+            lambda pp: pp.start == date_start and pp.end == date_end and pp.team == team_db).first()
+        return plan_period_db.notes, plan_period_db.deadline, plan_period_db.id
 
     @staticmethod
     @db_session
@@ -353,6 +386,25 @@ class Availables:
         persons_without_availables = [person for person in models.PlanPeriod[UUID(plan_period_id)].team.actors
                                       if person not in persons_with_availables]
         return [schemas.Person.model_validate(p) for p in persons_without_availables]
+
+    @staticmethod
+    @db_session
+    def get_notes_from_person_planperiod(person_id: UUID, plan_period_id: UUID) -> str:
+        availables_db = (models.Availables.select()
+                         .filter(lambda a: a.plan_period.id == plan_period_id)
+                         .filter(lambda a: a.person.id == person_id)).first()
+        return availables_db.notes if availables_db else ''
+
+    @staticmethod
+    @db_session
+    def update_notes_for_person_planperiod(person_id: UUID, plan_period_id: UUID, notes: str):
+        availables_in_db = models.Availables.get(
+            lambda a: a.person == models.Person[person_id] and a.plan_period == models.PlanPeriod[plan_period_id])
+        if not availables_in_db:
+            availables_in_db = models.Availables(
+                plan_period=models.PlanPeriod[plan_period_id], person=models.Person[person_id])
+        availables_in_db.notes = notes
+        return schemas.AvailablesShow.model_validate(availables_in_db)
 
 
 class APSchedulerJob:

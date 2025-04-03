@@ -5,6 +5,7 @@ class TimeOfDay(Enum):
     morning = 'v'
     afternoon = 'n'
     whole_day = 'g'
+    evening = 'a'
 
 
 class AuthorizationTypes(Enum):
@@ -12,3 +13,4 @@ class AuthorizationTypes(Enum):
     admin = 'admin'
     dispatcher = 'dispatcher'
     actor = 'actor'
+    google_calendar = 'google_calendar'

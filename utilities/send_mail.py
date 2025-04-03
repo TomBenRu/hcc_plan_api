@@ -30,7 +30,8 @@ def send_new_password(person: schemas.Person, project: str, new_psw: str):
     msg['Subject'] = f'Account bei "{project}" Online-Planung'
 
     msg.set_content(f'Hallo {person.f_name} {person.l_name},\n\ndein neues Passwort für den Online-Zugang lautet:\n\n'
-                    f'{new_psw}\n\n'
+                    f'{new_psw}\n'
+                    f'Du kannst dieses Passwort jederzeit unter "Einstellungen im Online-Portal" ändern.\n\n'
                     f'Viele Grüße\nTeam hcc-plan')
 
     send_email(msg)
@@ -108,14 +109,13 @@ def send_remainder_deadline(plan_period_id: str):
         msg = EmailMessage()
         msg['From'] = SEND_ADDRESS
         msg['To'] = send_to
-        msg['Subject'] = f'Remainder: Abgabe deiner Spieloptionen'
+        msg['Subject'] = 'Remainder: Abgabe deiner Spieloptionen'
         msg.set_content(f'Hallo {person.f_name} {person.l_name},\n\n'
                         f'heute ist die Deadline für die Abgabe deiner Spieloptionen.\n'
                         f'Es sind noch keine Rückmeldungen über den Online-Planungsservice von {person.project.name} '
                         f'für die folgende Planung eingegangen:\n\n'
                         f'- {text_planperiod}.\n\n'
-                        f'Falls du dies bereits per Excell-Tabelle via Email getan hast, vergiss diesen Remainder.\n'
-                        f'Andernfalls solltest du das noch heute erledigen, damit ich dich bei der Planung der '
+                        f'Du solltest das noch heute erledigen, damit ich dich bei der Planung der '
                         f'Einsätze berücksichtigen kann.\n'
                         f'Homepage Planungsservice: https://hcc-plan-api.onrender.com/\n\n'
                         f'{planperiod.team.dispatcher.f_name} {planperiod.team.dispatcher.l_name}\n'

@@ -1,0 +1,337 @@
+{% set month_names = {1:'Januar', 2:'Februar', 3:'März', 4:'April', 5:'Mai', 6:'Juni', 7:'Juli', 8:'August', 9:'September', 10:'Oktober', 11:'November', 12:'Dezember'} %}
+{% set all_colors = ['bg-blue-800/40', 'bg-emerald-800/40', 'bg-violet-800/40'] %}
+{% set period_colors = {} %}
+
+{% for month, month_periods in grouped_dates.items() %}
+    {% for period in month_periods.periods.keys() %}
+        {% if period not in period_colors %}
+            {% set _ = period_colors.update({period: all_colors[period_colors|length % all_colors|length]}) %}
+        {% endif %}
+    {% endfor %}
+{% endfor %}
+
+<!-- Navigation Bar -->
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<nav class="bg-slate-800/95 backdrop-blur-sm border-b border-slate-700/50 fixed top-0 w-full z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <!-- Logo and Desktop Menu -->
+            <div class="flex">
+                <div class="flex-shrink-0 flex items-center">
+                    <span class="text-slate-100 text-xl font-bold">Verfügbarkeitskalender</span>
+                </div>
+                <!-- Desktop Menu -->
+                {% include 'desktop_menu_new.html' %}
+            </div>
+                <!-- Mobile menu -->
+                {% include 'mobile_navigation_new.html' %}
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="min-h-screen">
+    <!-- Container für die Notizen - außerhalb des Scroll-Bereichs -->
+    <div id="notes-container" class="fixed z-40"></div>
+
+    <!-- Hauptinhalt -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+        <div class="w-screen overflow-x-auto max-w-[1300px]">
+            <div class="min-w-[1300px] p-6">
+                <!-- Monatsgruppen -->
+                {% for month, periods in grouped_dates.items() %}
+                    <div class="mb-8">
+                        <!-- Monatstitel -->
+                        <div class="px-6 pt-0">
+                            <h2 class="text-2xl font-bold text-slate-100 mb-4 border-b border-slate-700 pb-2">
+                                {{ month_names[month] }} {{ periods.year }}
+                            </h2>
+                        </div>
+
+                        <!-- Kalenderbereich mit Planperioden -->
+                        {% set period_data = [] %}
+                        {% for period, dates in periods.periods.items() %}
+                            {% set _ = period_data.append({'period': period, 'dates': dates, 'color': period_colors[period]}) %}
+                        {% endfor %}
+                        
+                        <div class="px-6 pb-6">
+                            <div class="flex">
+                                {% set base_row_height = "9" %}         {# Höhe einer Kalenderzeile in rem #}
+                                {% set header_height = "2.5" %}         {# Höhe der Wochentage-Header in rem #}
+                                {% set row_gap = "0.5" %}               {# Abstand zwischen den Zeilen in rem #}
+                                {% set period_margin = "0.9" %}         {# Abstand zwischen den Planperioden in rem #}
+                                {% set weekday_header_margin = "0.3" %} {# Abstand unter dem Wochentage-Header in rem #}
+                                {% set period_top_margin = (header_height|float + weekday_header_margin|float)|string %}
+                                
+                                <!-- Planperioden Spalte -->
+                                <div class="flex flex-col pr-4 flex-shrink-0" style="min-width: 4rem;">
+                                    {% for item in period_data %}
+                                    {% set first_date = item.dates[0] %}
+                                    {% set last_date = item.dates[-1] %}
+                                    {% set start_weekday = first_date.isoweekday() %}
+                                    {% set total_days = (last_date - first_date).days + 1 %}
+                                    {% set total_cells = total_days + start_weekday - 1 %}
+                                    {% set rows = ((total_cells / 7)|round(0, 'ceil')|int) %}
+                                    {% set total_height = (base_row_height|float * rows + row_gap|float * (rows - 1) / 2.6)|string %}
+                                    <div class="flex items-center justify-center p-2 text-sm text-slate-200 font-medium rounded-lg {{ item.color }} backdrop-blur-sm" 
+                                        style="height: {{ total_height }}rem; margin-bottom: {{ period_margin }}rem; margin-top: {{ period_top_margin }}rem; writing-mode: vertical-lr; text-orientation: mixed; transform: rotate(180deg);">
+                                        <div class="flex flex-col items-center">
+                                            <div class="text-xs text-rose-300 font-medium mb-2 whitespace-nowrap">
+                                                Deadline: {{ period_deadlines[item.period].strftime("%d.%m.%y") }}
+                                            </div>
+                                            <div class="whitespace-nowrap font-bold">{{ item.period }}</div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Kalender Grid -->
+                                <div class="flex-1">
+                                    {% for item in period_data %}
+                                        {% set current_month = item.dates[0].month %}
+                                        {% set is_first_month = period_first_month[item.period] == current_month %}
+                                        <div id="period-{{ item.period|replace(' ', '-')|lower }}" 
+                                            class="mb-{{ period_margin }}rem last:mb-0 flex scroll-mt-20 period-container"
+                                            data-period="{{ item.period }}"
+                                            data-color="{{ item.color }}">
+                                            <!-- Kalender-Bereich -->
+                                            <div class="flex-shrink-0">
+                                                <!-- Wochentage Header -->
+                                                <div class="grid grid-cols-7 gap-0.5" style="height: {{ header_height }}rem; margin-bottom: {{ weekday_header_margin }}rem;">
+                                                    {% set weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] %}
+                                                    {% for day in weekdays %}
+                                                    <div class="text-center font-bold text-slate-300 text-sm py-2 px-1 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 {% if day in ['Sa', 'So'] %}text-sky-300{% endif %}">
+                                                        {{ day }}
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+
+                                                <!-- Tage Grid -->
+                                                <div class="grid grid-cols-7 gap-{{ row_gap }} mb-4">
+                                                    {# Leere Zellen für die Tage vor dem ersten Tag des Monats einfügen #}
+                                                    {% set first_date = item.dates[0] %}
+                                                    {% set weekday = first_date.isoweekday() %}
+                                                    {% for _ in range(weekday - 1) %}
+                                                        <div class="border border-slate-700/50 rounded-lg bg-slate-800/60" style="height: {{ base_row_height }}rem;"></div>
+                                                    {% endfor %}
+
+                                                    {% for date in item.dates %}
+                                                        <div class="border border-slate-700/50 rounded-lg hover:shadow-md transition-all duration-200 {{ item.color }} backdrop-blur-sm" 
+                                                            style="height: {{ base_row_height }}rem;">
+                                                            <!-- Datum -->
+                                                            <div class="bg-slate-800/80 p-2 rounded-t-lg border-b border-slate-700/50">
+                                                                <h3 class="text-sm font-medium text-slate-300 text-center">{{ date.strftime("%d.%m.") }}</h3>
+                                                            </div>
+
+                                                            <!-- Zeitoptionen -->
+                                                            <div class="p-2 flex flex-col gap-1">
+                                                                {% for period in colors_times_of_day.keys() %}
+                                                                    {% set curr_icon_color = colors_times_of_day[period]['checked' if date.strftime('%Y-%m-%d') in selected_times and period in selected_times[date.strftime('%Y-%m-%d')] else 'unchecked'] %}
+                                                                    {% include 'period_icon_new.html' %}
+                                                                {% endfor %}
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // HTMX Timeout-Konfiguration
+    htmx.config.timeout = 5000; // 5 Sekunden Timeout für alle HTMX-Requests
+
+    // Debounce Funktion für Scroll-Events
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Funktion zum Laden der ersten Periode
+    function loadFirstPeriod() {
+        // Warte auf Alpine.js Initialisierung
+        setTimeout(() => {
+            // Finde das erste Perioden-Element
+            const periodElements = document.querySelectorAll('.period-container');
+            if (periodElements.length > 0) {
+                const firstPeriod = periodElements[0];
+                const period = firstPeriod.dataset.period;
+                const color = firstPeriod.dataset.color;
+                
+                if (!period) {
+                    console.error('Period data attribute not found');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('period', period);
+                formData.append('color', color);
+                
+                fetch('{{ url_for('load_period_notes_new') }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(html => {
+                    const notesContainer = document.getElementById('notes-container');
+                    if (notesContainer) {
+                        notesContainer.innerHTML = html;
+                        htmx.process(notesContainer);
+                    }
+                })
+                .catch(error => console.error('Error loading notes:', error));
+            } else {
+                console.error('No period elements found');
+            }
+        }, 100); // Warte 100ms auf Alpine.js
+    }
+
+    let lastLoadedPeriod = null;
+    let isLoading = false;
+
+    // Funktion zum Laden der Periode beim Scrollen
+    const loadPeriodNotes = debounce(() => {
+        const containers = document.querySelectorAll('.period-container');
+        let maxVisibility = 0;
+        let mostVisiblePeriod = null;
+        let mostVisibleColor = null;
+
+        containers.forEach(container => {
+            const rect = container.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const visibleHeight = Math.min(rect.bottom, windowHeight) - Math.max(rect.top, 0);
+            const visibility = visibleHeight / container.offsetHeight;
+
+            if (visibility > maxVisibility && visibility > 0.3) {
+                maxVisibility = visibility;
+                mostVisiblePeriod = container.dataset.period;
+                mostVisibleColor = container.dataset.color;
+            }
+        });
+
+        if (mostVisiblePeriod && mostVisiblePeriod !== lastLoadedPeriod) {
+            lastLoadedPeriod = mostVisiblePeriod;
+            
+            const formData = new FormData();
+            formData.append('period', mostVisiblePeriod);
+            formData.append('color', mostVisibleColor);
+            
+            fetch('{{ url_for('load_period_notes_new') }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                const notesContainer = document.getElementById('notes-container');
+                if (notesContainer) {
+                    notesContainer.innerHTML = html;
+                    htmx.process(notesContainer);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }, 200);
+
+    // Event Listener
+    window.addEventListener('scroll', loadPeriodNotes);
+    window.addEventListener('resize', loadPeriodNotes);
+
+    // Initial load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadFirstPeriod);
+    } else {
+        loadFirstPeriod();
+    }
+
+    // Globaler HTMX-Fehlerhandler
+    document.body.addEventListener('htmx:error', function(evt) {
+        const notificationContainer = document.getElementById('notification-container');
+        if (notificationContainer) {
+            // Prüfe Online-Status
+            let errorMessage = navigator.onLine 
+                ? "Der Server ist nicht erreichbar - Bitte versuchen Sie es später erneut"
+                : "Keine Internetverbindung - Bitte überprüfen Sie Ihre Verbindung";
+
+            notificationContainer.innerHTML = `
+                <div class="fixed top-4 right-4 bg-red-100 border-red-400 text-red-700 border px-4 py-3 rounded shadow-md z-[100]" 
+                     role="alert"
+                     remove-me="5s">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="block sm:inline">
+                            ${errorMessage}
+                        </span>
+                    </div>
+                </div>`;
+
+            // Finde alle Elemente mit remove-me Attribut
+            const removeElements = notificationContainer.querySelectorAll('[remove-me]');
+            removeElements.forEach(element => {
+                const duration = element.getAttribute('remove-me');
+                const seconds = parseInt(duration);
+                if (!isNaN(seconds)) {
+                    setTimeout(() => {
+                        if (element && element.parentNode) {
+                            element.remove();
+                        }
+                    }, seconds * 1000);
+                }
+            });
+        }
+    });
+
+    // Aktualisiere die Fehlermeldung bei Änderung des Online-Status
+    window.addEventListener('online', function() {
+        console.log('Online status changed: online');
+    });
+    window.addEventListener('offline', function() {
+        const notificationContainer = document.getElementById('notification-container');
+        if (notificationContainer) {
+            notificationContainer.innerHTML = `
+                <div class="fixed top-4 right-4 bg-red-100 border-red-400 text-red-700 border px-4 py-3 rounded shadow-md z-[100]" 
+                     role="alert"
+                     remove-me="5s">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="block sm:inline">
+                            Keine Internetverbindung - Bitte überprüfen Sie Ihre Verbindung
+                        </span>
+                    </div>
+                </div>`;
+
+            // Finde alle Elemente mit remove-me Attribut
+            const removeElements = notificationContainer.querySelectorAll('[remove-me]');
+            removeElements.forEach(element => {
+                const duration = element.getAttribute('remove-me');
+                const seconds = parseInt(duration);
+                if (!isNaN(seconds)) {
+                    setTimeout(() => {
+                        if (element && element.parentNode) {
+                            element.remove();
+                        }
+                    }, seconds * 1000);
+                }
+            });
+        }
+    });
+</script>

@@ -1,0 +1,20 @@
+{% extends "index_base.html" %}
+
+{% block links %}
+    {{ super() }}
+{% endblock %}
+{% block menu_bar_items %}
+{% endblock %}
+{% block navbar_small_items %}
+{% endblock %}
+{% block cont_header %}
+<h1 class="w3-margin w3-xxlarge">{{ name_project }} - Google Calendar</h1>
+  <p class="w3-xlarge">Hallo {{ f_name }} {{ l_name }}.</p>
+{% endblock %}
+
+{% block cont_main %}
+<h2 class="w3-margin w3-xxlarge">Google Calendar Baden-Württemberg</h2>
+<iframe src="https://calendar.google.com/calendar/embed?src=s0q230vop16u688r9r64sidjmg%40group.calendar.google.com&ctz=Europe%2FBerlin" style="border: 0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+<h2 class="w3-margin w3-xxlarge">Google Calendar Mainz</h2>
+<iframe src="https://calendar.google.com/calendar/embed?src=7rhma8sj4rj8496t0srcaqi9sc%40group.calendar.google.com&ctz=Europe%2FBerlin" style="border: 0" width="800" height="600" frameborder="0" scrolling="no"></iframe>
+{% endblock %}

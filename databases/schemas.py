@@ -4,7 +4,7 @@ from typing import Optional, Any, List, Union
 from uuid import UUID
 
 import apscheduler.job
-from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
+from pydantic import BaseModel, EmailStr, field_validator, ConfigDict, Field
 from .enums import TimeOfDay
 
 
@@ -176,7 +176,7 @@ class RemainderDeadlineCreate(BaseModel):
     trigger: Optional[str] = None
     run_date: datetime
     func: Optional[str] = None
-    args: List = []
+    args: List = Field(default_factory=list)
 
 
 class APSchedulerJob(BaseModel):

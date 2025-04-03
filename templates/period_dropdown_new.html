@@ -1,0 +1,25 @@
+{% set position_class = 'left-0 w-full' if is_mobile else 'right-0 w-48' %}
+{% set link_class = 'pl-4 rounded-md' if is_mobile else 'px-4' %}
+{% set click_away = '' if is_mobile else '@click.away="dropdownOpen = false"' %}
+
+<div x-show="dropdownOpen"
+     x-transition:enter="transition ease-out duration-100"
+     x-transition:enter-start="transform opacity-0 scale-95"
+     x-transition:enter-end="transform opacity-100 scale-100"
+     x-transition:leave="transition ease-in duration-75"
+     x-transition:leave-start="transform opacity-100 scale-100"
+     x-transition:leave-end="transform opacity-0 scale-95"
+     {{ click_away|safe }}
+     class="absolute {{ position_class }} mt-2 rounded-md shadow-lg bg-slate-800 ring-1 ring-black ring-opacity-5">
+    {% for period in sorted_periods %}
+    <a href="#period-{{ period|replace(' ', '-')|lower }}" 
+       class="block py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-slate-100 {{ link_class }}" 
+       @click.prevent="$nextTick(() => { 
+           document.getElementById('period-{{ period|replace(' ', '-')|lower }}').scrollIntoView({ behavior: 'smooth' });
+           dropdownOpen = false;
+           {% if is_mobile %}isOpen = false;{% endif %}
+       })">
+        {{ period }}
+    </a>
+    {% endfor %}
+</div>
