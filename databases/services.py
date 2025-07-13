@@ -6,7 +6,7 @@ from typing import Optional, Union
 from uuid import UUID
 
 import apscheduler.job
-from pony.orm import db_session
+from pony.orm import db_session, select
 from pydantic import EmailStr
 
 from databases import schemas, models
@@ -425,7 +425,7 @@ class APSchedulerJob:
     @staticmethod
     @db_session
     def update_job_in_db(job: apscheduler.job.Job):
-        job_db = models.APSchedulerJob.get(lambda j: str(j.plan_period.id) == job.id)
+        job_db = next((j for j in models.APSchedulerJob.select() if job.id == str(j.plan_period.id)), None)
         job_db.job = pickle.dumps(job)
 
     @staticmethod

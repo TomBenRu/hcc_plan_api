@@ -1,5 +1,6 @@
 import datetime
 from uuid import UUID
+import pytz  # Neuer Import für Zeitzonen
 
 from fastapi import APIRouter, HTTPException, status, Depends
 
@@ -8,6 +9,9 @@ from databases.enums import AuthorizationTypes
 from oauth2_authentication import verify_access_token, oauth2_scheme
 from utilities.scheduler import scheduler
 from utilities.send_mail import send_remainder_deadline, send_avail_days_to_actors
+
+# Konstante für die Zeitzone definieren
+TIMEZONE = pytz.timezone('Europe/Berlin')
 
 router = APIRouter(prefix='/dispatcher', tags=['Dispatcher'])
 
@@ -54,8 +58,15 @@ async def new_planperiod(team_id: str, date_start: str, date_end: str, deadline:
             services.APSchedulerJob.delete_job_from_db(str(new_plan_period.id))
         except Exception as e:
             print(f'Job nicht in DB vorhanden: {e}')
-        run_date = datetime.datetime(new_plan_period.deadline.year, new_plan_period.deadline.month,
-                                     new_plan_period.deadline.day) #  - datetime.timedelta(days=1)
+        
+        # Naive datetime erstellen
+        naive_date = datetime.datetime(new_plan_period.deadline.year, 
+                                      new_plan_period.deadline.month,
+                                      new_plan_period.deadline.day,
+                                       hour=0, minute=0, second=0)
+        # Zeitzone hinzufügen
+        run_date = TIMEZONE.localize(naive_date)
+        
         job = scheduler.add_job(func=send_remainder_deadline, trigger='date', run_date=run_date,
                                 id=str(new_plan_period.id), args=[str(new_plan_period.id)])
         services.APSchedulerJob.add_job_to_db(job=job)
@@ -97,14 +108,20 @@ def update_planperiod(planperiod: schemas.PlanPeriod, access_token: str = Depend
     except Exception as e:
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f'Error: {e}')
 
-    run_date = datetime.datetime(planperiod.deadline.year, planperiod.deadline.month,
-                                 planperiod.deadline.day) - datetime.timedelta(days=1)
+    # Naive datetime erstellen (einen Tag vor Deadline)
+    naive_date = datetime.datetime(planperiod.deadline.year, 
+                                  planperiod.deadline.month,
+                                  planperiod.deadline.day,
+                                   hour=0, minute=0, second=0)
+    # Zeitzone hinzufügen
+    run_date = TIMEZONE.localize(naive_date)
+    
     try:
         job = scheduler.reschedule_job(str(planperiod.id), trigger='date', run_date=run_date)
         services.APSchedulerJob.update_job_in_db(job=job)
-        print(f'rescheduled_jobs: {[j.__getstate__() for j in scheduler.get_jobs()]}')
+        print(f'rescheduled_jobs: {[j.__getstate__() for j in scheduler.get_jobs()]}', flush=True)
     except Exception as e:
-        print(f'Fehler in Route /dispatcher/planperiod: {e}')
+        print(f'Fehler in Route /dispatcher/planperiod: {e}', flush=True)
 
     if planperiod_updated.closed:
         send_avail_days_to_actors(str(planperiod.id))
