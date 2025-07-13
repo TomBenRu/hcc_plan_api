@@ -119,7 +119,8 @@ def update_planperiod(planperiod: schemas.PlanPeriod, access_token: str = Depend
     try:
         job = scheduler.reschedule_job(str(planperiod.id), trigger='date', run_date=run_date)
         services.APSchedulerJob.update_job_in_db(job=job)
-        print(f'rescheduled_jobs: {[j.__getstate__() for j in scheduler.get_jobs()]}', flush=True)
+        print(f'rescheduled_jobs: {[j.__getstate__() for j in scheduler.get_jobs() if j.id == str(planperiod.id)]}',
+              flush=True)
     except Exception as e:
         print(f'Fehler in Route /dispatcher/planperiod: {e}', flush=True)
 
